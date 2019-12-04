@@ -2,15 +2,11 @@ name: DTR-phage-pipeline
 channels:
   - conda-forge
   - bioconda
-#  - defaults
 dependencies:
   - python == 3.7
   - snakemake < 5.4.0
   - matplotlib
-#  - biopython
   - click
   - pandas
   - requests
   - minimap2==2.17
-#  - pip:
-#      - python-gitlab
