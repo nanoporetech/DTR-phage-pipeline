@@ -19,8 +19,8 @@ rule kaiju_taxa:
     output: KAIJU_TAXIDS
     conda: '../envs/csvkit.yml'
     shell:
-        'csvcut -t -c 3 {input} | sort -nk1 | uniq > {output}; '
-        'echo -e 'taxID' | cat - {output} > /tmp/out && mv /tmp/out {output}'
+        "csvcut -t -c 3 {input} | sort -nk1 | uniq > {output}; "
+        "echo -e 'taxID' | cat - {output} > /tmp/out && mv /tmp/out {output}"
 
 rule kaiju_attach_taxa:
     input: 

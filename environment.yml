@@ -1,4 +1,4 @@
-name: dtr_phage_genome_pipeline
+name: DTR-phage-pipeline
 channels:
   - conda-forge
   - bioconda

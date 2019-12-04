@@ -20,7 +20,7 @@ TAX_RANK      = ["0","1","2","3","4","5","6"]
 ###################################
 OUTPUT_ROOT  = Path(config['output_root'])
 VERSION      = config['version']
-RACON_ROUNDS = config['POLISHER']['RACON']['repeat']
+RACON_ROUNDS = config['RACON']['repeat']
 
 
 ###################################
@@ -65,7 +65,7 @@ KAIJU_TAX_GENOMESIZE_EST  = str(KAIJU_DIR / 'taxid_genomesize_estimates.csv')
 # K-mer UAMP files and plots      #
 ###################################
 KMER_BIN_ROOT                     = OUTPUT_ROOT /  SAMPLE / STYPE / VERSION / 'kmer_binning'
-KMER_BINS_MEMBERSHIP              = str(KMER_BIN_ROOT / 'bin_membership.csv')
+KMER_BINS_MEMBERSHIP              = str(KMER_BIN_ROOT / 'bin_membership.tsv')
 KMER_BIN_STATS                    = str(KMER_BIN_ROOT / 'bin_stats.csv')
 KMER_FREQS_TMP                    = str(KMER_BIN_ROOT / 'seq_comp.k{}.tmp'.format(K))
 KMER_FREQS                        = str(KMER_BIN_ROOT / 'seq_comp.k{}.tsv'.format(K))
@@ -88,7 +88,7 @@ BIN_GENOME_SIZE             = str(BINS_DIR / '{bin_id}' / 'genome_size.txt')
 ALL_BIN_IDS                 = list(map(lambda x: x.split('/')[-1], glob(str(BINS_DIR)+'/*')))
 SKIP_BINS                   = config['SKIP_BINS'][SAMPLE][STYPE][VERSION]
 BIN_IDS                     = [b for b in ALL_BIN_IDS if int(b) not in SKIP_BINS]
-BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "bins_analysis"
+BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "bins_refine"
 
 #####################################
 # Alignment clustering  FILES       #
@@ -212,7 +212,7 @@ include: 'rules/linear_concats.smk'
 # 3. all_populate_kmer_bins
 # 4. all_alignment_clusters
 # 5. all_polishing
-# 6. all_finish_ip
+# 6. all_finish_up
 
 rule all_kmer_count_and_bin:
     input:
@@ -249,7 +249,7 @@ rule all_polishing:
         dynamic(BIN_CLUSTER_RACON_POLISHED_FASTA),
         dynamic(BIN_CLUSTER_POLISHED_REF),
 
-rule all_finish_ip:
+rule all_finish_up:
     input:
         dynamic(DTR_ALIGN_COORD_PLOT),
         dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL),

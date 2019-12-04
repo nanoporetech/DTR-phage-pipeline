@@ -1,19 +1,19 @@
 #####################
-# Editing required! #
+# Editing mandatory #
 #####################
 
 # Run details. These primarily determine where the output ends up (see output_root below)
 sample: '25m'
 stype: '1D'
-version: 'v1'
+version: 'v2'
 
 # Path of the read (*.fasta) & sequencing summary files you want to analyze
-input_fasta: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_pipeline/data/25mspike_01pct.gt40kb.10k.fasta
-input_summary: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_pipeline/data/25mspike_01pct.gt40kb.10k.summary.tsv
+input_fasta: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/data/25mspike_01pct.gt40kb.10k.fasta
+input_summary: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/data/25mspike_01pct.gt40kb.10k.summary.tsv
 
 # Path where you would like pipeline results to be written.
 # Run outputs will end up in in the directory: <output_root>/<sample>/<stype>/<version>/
-output_root: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_pipeline/analysis/
+output_root: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/analysis/
 
 max_threads: 32 # Maximum number of threads the pipeline will attempt to use
 
@@ -34,6 +34,7 @@ SKIP_BINS:
     25m:
         1D: 
             v1: [-1]
+            v2: [-1]
 
 ####################
 # Editing optional #
