@@ -1,0 +1,100 @@
+#####################
+# Editing required! #
+#####################
+sample: '25m'   
+stype: '1D'
+version: 'v1'
+
+# Path of the read (*.fasta) & sequencing summary files you want to analyze
+input_fasta: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_genome_pipeline/data/25mspike_01pct.gt40kb.10k.fasta
+input_summary: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_genome_pipeline/data/25mspike_01pct.gt40kb.10k.summary.tsv
+
+# Path where you would like pipeline results to be written
+output_bin_base: /media/sfodata/users/jbeaulaurier/projects/packages/dtr_phage_genome_pipeline/analysis/
+
+max_threads: 32 # Maximum number of threads the pipeline will attempt to use
+
+# Medaka model depends on whether MinION or PromethION used for sequencing and which Guppy version
+# was used for basecalling. Please see Medaka documentation for list of available models.
+MEDAKA:
+    model: 'r941_min_high_g303'
+    threads: 4 # Should be << max_threads so that multiple genomes can be polished in parallel
+
+KAIJU:
+    db: /media/sfodata/databases/kaiju/nr_euk # dbs can be downloaded from http://kaiju.binf.ku.dk/server
+    switch: '-a greedy -e 5' # max 5 substitutions and allows substitutions; slower but more sensitive than default params
+
+# Specify which k-mer bin to skip for each sample/run/version. HDBSCAN assigns all unbinned reads to bin_id = -1,
+# so this bin should always be skipped. But occasionally other 'bad' bins require skipping if they generate downstream 
+# errors in the pipeline.
+SKIP_BINS: 
+    25m:
+        1D: 
+            v1: [-1]
+
+####################
+# Editing optional #
+####################
+
+DTR_FIND:
+    ovlp: 20 # Percent of read start/end to check for alignment
+    chunksize: 5000
+
+KMER_CALC:
+    k: 5      # k-mer size to use for k-mer binning
+    cli: '-c' # Use raw k-mer counts instead of normalized k-mer frequencies (best for genome-spanning reads)
+
+UMAP:
+    min_rl: 5000       # Minimum readlength to consider in analysis
+    max_cb_rl: 60000   # Maximum read length to include in colorbar for UMAP scatterplot annotated by read length
+    min_d: 0.1         # min_dist paramter for UMAP
+    neighbors: 15      # n_neighbors parameter for UMAP
+    min_q: 9           # Filtering out low qscore reads prior to running UMAP improves resolution of bins
+    bin_min_reads: 10  # Don't create a bin if the bin contains < bin_min_reads
+    scatter_size: 7    # Marker size for UMAP scatter plots
+    scatter_alpha: 0.2 # Marker alpha for UMAP scatter plots
+
+BIN_AVA_ALIGN:
+    MINIMAP2:
+        cli: '-x ava-ont --no-long-join -r100'
+        threads: 1
+    CLUST:
+        min_score_frac: 0.8
+        min_reads: 5
+
+DTR_ALIGN:
+    ovlp: 20   # Percent of read start/end to check for alignment
+    threads: 1 # Single thread is optimum for aligning single read start/end
+
+NUCMER:
+    mincov: 98.0 # Genome-genome percent coverage threshold for deduplicating polished genomes
+    minpct: 98.0 # Genome-genome percent identity thresholf for deduplicating polished genomes
+    minpol: 10   # Minimum number of polishing reads for a genome
+
+MINIMAP2:
+    STANDARD:
+        switches: '-x map-ont'
+        threads: 4
+
+RACON:
+    repeat: 3 # Number of iterations to run
+    include-unpolished: True
+    window-length: 500
+    quality-threshold: 9
+    error-threshold: 0.3
+    match: 5
+    mismatch: -4
+    gap: -8
+    threads: 4
+    fragment-correction: True ## should not contain dual/self overlaps
+
+PORECHOP:
+    switches: '--no_split'
+    threads: 16
+
+PRODIGAL:
+    threads: 4
+
+LIN_CONCAT:
+    ovlp_len: 3000
+    minlen: 15000

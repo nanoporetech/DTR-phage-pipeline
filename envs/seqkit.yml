@@ -1,0 +1,4 @@
+channels:
+  - bioconda
+dependencies:
+  - seqkit =0.5.5

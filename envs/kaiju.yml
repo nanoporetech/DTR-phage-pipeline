@@ -1,0 +1,6 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - kaiju==1.7.2
+  - krona==2.7.1

@@ -1,0 +1,8 @@
+channels:
+  - bioconda
+dependencies:
+  - python=3.5.5
+  - biopython=1.68
+  - pandas=0.22
+  - mummer=3.23
+  - tqdm=4.23.3

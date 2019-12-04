@@ -1,0 +1,6 @@
+data
+analysis
+.snakemake
+rules/._*
+scripts/._*
+envs/._*
