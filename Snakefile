@@ -18,7 +18,7 @@ TAX_RANK      = ["0","1","2","3","4","5","6"]
 ###################################
 # OUTPUT VARS                     #
 ###################################
-OUTPUT_ROOT  = Path(config['output_bin_base'])
+OUTPUT_ROOT  = Path(config['output_root'])
 VERSION      = config['version']
 RACON_ROUNDS = config['POLISHER']['RACON']['repeat']
 
