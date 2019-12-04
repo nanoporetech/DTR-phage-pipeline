@@ -67,15 +67,15 @@ KAIJU_TAX_GENOMESIZE_EST  = str(KAIJU_DIR / 'taxid_genomesize_estimates.csv')
 KMER_BIN_ROOT                     = OUTPUT_ROOT /  SAMPLE / STYPE / VERSION / 'kmer_binning'
 KMER_BINS_MEMBERSHIP              = str(KMER_BIN_ROOT / 'bin_membership.tsv')
 KMER_BIN_STATS                    = str(KMER_BIN_ROOT / 'bin_stats.csv')
-KMER_FREQS_TMP                    = str(KMER_BIN_ROOT / 'seq_comp.k{}.tmp'.format(K))
-KMER_FREQS                        = str(KMER_BIN_ROOT / 'seq_comp.k{}.tsv'.format(K))
-KMER_FREQS_UMAP                   = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.tsv'.format(K,config['UMAP']['min_rl']))
-KMER_FREQS_UMAP_TAX               = str(KMER_BIN_ROOT / ('seq_comp.k%s.%sbp.umap.{database}.{rank}.png' % (K,config['UMAP']['min_rl'])))
-KMER_FREQS_UMAP_QSCORE            = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.qscore.png'.format(K,config['UMAP']['min_rl']))
-KMER_FREQS_UMAP_GC                = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.gc.png'.format(K,config['UMAP']['min_rl']))
-KMER_FREQS_UMAP_READLENGTH        = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.readlength.png'.format(K,config['UMAP']['min_rl']))
-KMER_FREQS_UMAP_BINS_PLOT         = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.bins.png'.format(K,config['UMAP']['min_rl']))
-KMER_FREQS_UMAP_BINS_COORDS       = str(KMER_BIN_ROOT / 'seq_comp.k{}.{}bp.umap.bins.tsv'.format(K,config['UMAP']['min_rl']))
+KMER_FREQS_TMP                    = str(KMER_BIN_ROOT / 'kmer_comp.tmp')
+KMER_FREQS                        = str(KMER_BIN_ROOT / 'kmer_comp.tsv')
+KMER_FREQS_UMAP                   = str(KMER_BIN_ROOT / 'kmer_comp.umap.tsv')
+KMER_FREQS_UMAP_TAX               = str(KMER_BIN_ROOT / ('kmer_comp.umap.{database}.{rank}.png'))
+KMER_FREQS_UMAP_QSCORE            = str(KMER_BIN_ROOT / 'kmer_comp.umap.qscore.png')
+KMER_FREQS_UMAP_GC                = str(KMER_BIN_ROOT / 'kmer_comp.umap.gc.png')
+KMER_FREQS_UMAP_READLENGTH        = str(KMER_BIN_ROOT / 'kmer_comp.umap.readlength.png')
+KMER_FREQS_UMAP_BINS_PLOT         = str(KMER_BIN_ROOT / 'kmer_comp.umap.bins.png')
+KMER_FREQS_UMAP_BINS_COORDS       = str(KMER_BIN_ROOT / 'kmer_comp.umap.bins.tsv')
 
 
 ###################################
@@ -88,12 +88,12 @@ BIN_GENOME_SIZE             = str(BINS_DIR / '{bin_id}' / 'genome_size.txt')
 ALL_BIN_IDS                 = list(map(lambda x: x.split('/')[-1], glob(str(BINS_DIR)+'/*')))
 SKIP_BINS                   = config['SKIP_BINS'][SAMPLE][STYPE][VERSION]
 BIN_IDS                     = [b for b in ALL_BIN_IDS if int(b) not in SKIP_BINS]
-BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "bins_refine"
+BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "refine_bins"
 
 #####################################
 # Alignment clustering  FILES       #
 #####################################
-ALN_CLUST_DIR            = BINNED_ANALYSIS_ROOT / 'align_clusters'
+ALN_CLUST_DIR            = BINNED_ANALYSIS_ROOT / 'alignments'
 ALN_CLUST_PAF            = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.ava.paf')
 ALN_CLUST_OUTPUT_PREFIX  = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust')
 ALN_CLUST_OUTPUT_HEATMAP = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust.heatmap.png')
@@ -104,7 +104,7 @@ ALN_CLUST_READS_COMBO    = str(ALN_CLUST_DIR / 'all_bins.clust.info.csv')
 ###################################
 # Separate cluster-specific reads #
 ###################################
-BIN_CLUSTER_DIR                 = BINNED_ANALYSIS_ROOT / 'bin_cluster_reads'
+BIN_CLUSTER_DIR                 = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
 BIN_CLUSTER_READS_INFO          = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readinfo.csv')
 BIN_CLUSTER_READS_LIST          = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readlist.csv')
 BIN_CLUSTER_READS_FASTA         = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.reads.fasta')
@@ -118,7 +118,7 @@ BIN_CLUSTER_POL_READS_FASTA     = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin
 ####################################
 # Polish cluster reads using Racon #
 ####################################
-POLISH_DIR                       = BINNED_ANALYSIS_ROOT / 'bin_cluster_polishing'
+POLISH_DIR                       = BINNED_ANALYSIS_ROOT / 'align_cluster_polishing'
 RACON_DIR                        = POLISH_DIR / 'racon'
 BIN_CLUSTER_RACON_POLISHED_FASTA = str(RACON_DIR / '{bin_clust_id}' / '{{bin_clust_id}}.ref_read.racon_{repeats}x.fasta'.format(repeats=RACON_ROUNDS))
 

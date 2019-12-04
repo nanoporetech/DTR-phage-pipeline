@@ -23,7 +23,7 @@ Next, create a `conda` environment where you will run `Snakemake`:
 ```
 conda env create -f environment.yml
 ```
-That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake `rule` is called.
+That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake step (described below) is executed.
 
 ## Usage
 
@@ -50,37 +50,38 @@ The full pipeline, starting from raw reads and ending with nanopore-polished pha
 ```
 snakemake --use-conda -p -j <nproc> -r all_kmer_count_and_bin
 ```
-Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. The output files for this step are placed in a path according to the variables set in the `config.yml` file.
-* <output_root>/<sample>/<stype>/<version>/__reads_summary__
+Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. The output files for this step are placed in a path according to the variables set in the `config.yml` file. In this description, `<run_output_dir>` will refer to the path consisting of `<output_root>/<sample>/<stype>/<version>` as defined in the `config.yml` file. The outputs from this step will fall into three directories:
+* `<run_output_dir>/reads_summary`
     * `reads.summary.stats.png`: Read length and qscore distributions for all input reads
-* <output_root>/<sample>/<stype>/<version>/__dtr_reads__
+* `<run_output_dir>/dtr_reads`
     * `output.dtr.fasta`: FASTA file of all DTR-containing reads
     * `output.dtr.hist.png`: Read length distribution of all DTR-containing reads
     * `output.dtr.stats.tsv`: Statistics for each DTR-containing read
-* <output_root>/<sample>/<stype>/<version>/__kmer_binning__
+* `<run_output_dir>/kmer_binning`
     * `bin_membership.tsv`: bin assignments for each DTR-containing read
-    * `seq_comp.*.png`: Variety of scatter plots of UMAP embedding of k-mer count vectors, annoted by features including GC-content, read length, and bin assigned by [HDBSCAN](https://github.com/lmcinnes/HDBSCAN)
-    * `seq_comp.*.umap.tsv`: x- and y-coordinates for each read in the 2-d embedding
-    * `seq_comp.*.umap.bins.tsv`: Mean x- and y-coordinates for each bin assigned by HDBSCAN (for finding bins in 2-d embedding)
-    * `seq_comp.k5.tsv`: 5-mer count vectors for each DTR-containing read
+    * `kmer_comp.tsv`: 5-mer count vectors for each DTR-containing read
+    * `kmer_comp.umap.tsv`: x- and y-coordinates for each read in the 2-d embedding
+    * `kmer_comp.umap.*.png`: Variety of scatter plots of [UMAP](https://github.com/lmcinnes/umap) embedding of k-mer count vectors, annoted by features including GC-content, read length, and bin assigned by [HDBSCAN](https://github.com/lmcinnes/HDBSCAN)
+    * `kmer_comp.umap.bins.tsv`: Mean x- and y-coordinates for each bin assigned by HDBSCAN (for finding bins in 2-d embedding)
+    
 
 The next step annotates reads using Kaiju and is not strictly required for producing polished genomes. However, it can be informative for verifying the integrity of the k-mer bins and for other downstream analyses.
 ```
 snakemake --use-conda -p -j <nproc> -r all_kaiju
 ```
 Some of the output files for this step include:
-* <output_root>/<sample>/<stype>/<version>/__kaiju__
+* `<run_output_dir>/kaiju`
     * `results.html`: Krona dynamic plot of annotated taxonomic composition of DTR-containing reads
     * `results.taxa.tsv`: Per-read annotation results
-* <output_root>/<sample>/<stype>/<version>/__kmer_binning__
-    * `seq_comp.*.umap.nr_euk.[0-6].png`: Scatter plots of UMAP embedding of k-mer count vectors, annotated by various levels of taxonomic annotation
+* `<run_output_dir>/kmer_binning`
+    * `kmer_comp.umap.nr_euk.[0-6].png`: Scatter plots of UMAP embedding of k-mer count vectors, annotated by various levels of taxonomic annotation
 
 The next step simply populates subdirectories with the binned reads as assigned by HDBSCAN.
 ```
 snakemake --use-conda -p -j <nproc> -r all_populate_kmer_bins
 ```
 These subdirectories are located in the `kmer_binning` directory:
-* <output_root>/<sample>/<stype>/<version>/kmer_binning/__bins/<bin_id>__
+* `<run_output_dir>/kmer_binning/bins/<bin_id>`
 * Each bin subdirectory contains a list of binned read names (`read_list.txt`) and an associated FASTA file of reads (`<bin_id>.reads.fa`)
 
 Next, each k-mer bin is refined by all-vs-all aligning all reads within a bin. The resulting alignment scores are clustered hierarchically and refined alignment clusters are called from the clustering.
@@ -88,7 +89,7 @@ Next, each k-mer bin is refined by all-vs-all aligning all reads within a bin. T
 snakemake --use-conda -p -j <nproc> -r all_alignment_clusters
 ```
 The bin refinement results for each k-mer bin are also placed in `kmer_binning` directory:
-* <output_root>/<sample>/<stype>/<version>/kmer_binning/__bins_refine/align_clusters/<bin_id>__
+* `<run_output_dir>/kmer_binning/refine_bins/align_clusters/<bin_id>`
 * Each bin refinement procedure generates an alignment (`<bin_id>.ava.paf`), clustering heatmap (`<bin_id>.clust.heatmap.png`), and information on alignment cluster assignments (`<bin_id>.clust.info.tsv`)
 
 Next, a single read is selected from each valid alignment cluster and is polished by the remaining reads in the alignment cluster. Polishing is first done using multiple rounds of [Racon](https://github.com/isovic/racon) (3x by default), then is finished using a single round of [Medaka](https://github.com/nanoporetech/medaka) polishing.
@@ -96,8 +97,12 @@ Next, a single read is selected from each valid alignment cluster and is polishe
 snakemake --use-conda -p -j <nproc> -r all_polishing
 ```
 This step produces polished output in the following directories:
-
-XXX
+* `<run_output_dir>/kmer_binning/refine_bins/align_cluster_reads/<clust_id>` simply contains the reads corresponding to each alignment cluster
+* `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing/racon/<clust_id>` contains the Racon polishing output for each alignment cluster
+* `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing/medaka/<clust_id>` contains the Medaka polishing output for each alignment cluster
+    * The critical output file in each of these `medaka/<clust_id>` folders is the `<clust_id>.ref_read.medaka.fasta` file containing the Medaka-polished genome produced from this alignment cluster. Subsequent Snakemake rules analyze and aggregate these files.
+    
+Finally, we finish up the pipeline by running a series of annotations, aggregations, and evaluations of the final polished genome sequences. We also use this step to query the sequencing dataset for linear concatemer reads that could represent novel mobile elements. 
 ```
 snakemake --use-conda -p -j <nproc> -r all_finish_up
 ```

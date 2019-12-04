@@ -111,19 +111,10 @@ def fancy_dendrogram(*args, **kwargs):
 
 def run_clustering(df, args, default_sim):
     Z   = sch.linkage(df, 'ward', optimal_ordering=True)
-    # print(Z)
 
     c, coph_dists = sch.cophenet(Z, pdist(df))
-    print('CCC: {:.3f}'.format(c))
 
-    # d_std = np.std(Z[:,2])
-    d_std = 3*np.median(Z[:,2])
-    args.max_dist = d_std
-    print('median: {:.3f}, standard deviation: {:.3f}, threshold: {:.3f}'.format(np.median(Z[:,2]), np.std(Z[:,2]), d_std))
-    # fig = plt.figure(figsize=(12, 12))
-    # plt.hist(Z[:,2], bins=100)
-    # plt.xlim([0,100])
-    # plt.savefig('dist.hist.png') 
+    args.max_dist = 3*np.median(Z[:,2])
     
     fig = plt.figure(figsize=(12, 12))
 
@@ -281,7 +272,7 @@ def main(args):
                 clust_mean_rl = np.mean(rls_c)
                 max_score = (clust_mean_rl/10000)**2
                 max_score_frac = clust_mean_score / max_score
-                print(bin_id, row['cluster'], df_c.shape[0], clust_mean_rl, clust_mean_score, max_score_frac)
+                # print(bin_id, row['cluster'], df_c.shape[0], clust_mean_rl, clust_mean_score, max_score_frac)
                 df_c = df_c.set_index('qname')
                 if df_c.shape[0]>=args.min_reads and max_score_frac>=args.min_score_frac:
                     for r in df_c.index.values:
@@ -295,8 +286,9 @@ def main(args):
         
     else:
         # There are no alignments to parse
-        print('keep\tread\tall_v_all_aligns')
-        print('{}\t{}\t{}'.format('False', 'none', 0))
+        # print('keep\tread\tall_v_all_aligns')
+        # print('{}\t{}\t{}'.format('False', 'none', 0))
+        pass
 
 if __name__ == '__main__':
     args = parse_args()
