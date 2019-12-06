@@ -94,19 +94,39 @@ The bin refinement results for each k-mer bin are also placed in `kmer_binning` 
 
 Next, a single read is selected from each valid alignment cluster and is polished by the remaining reads in the alignment cluster. Polishing is first done using multiple rounds of [Racon](https://github.com/isovic/racon) (3x by default), then is finished using a single round of [Medaka](https://github.com/nanoporetech/medaka) polishing.
 ```
-snakemake --use-conda -p -j <nproc> -r all_polishing
+snakemake --use-conda -p -j <nproc> -r all_polish_and_annotate
 ```
 This step produces polished output in the following directories:
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_reads/<clust_id>` simply contains the reads corresponding to each alignment cluster
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing/racon/<clust_id>` contains the Racon polishing output for each alignment cluster
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing/medaka/<clust_id>` contains the Medaka polishing output for each alignment cluster
-    * The critical output file in each of these `medaka/<clust_id>` folders is the `<clust_id>.ref_read.medaka.fasta` file containing the Medaka-polished genome produced from this alignment cluster. Subsequent Snakemake rules analyze and aggregate these files.
+    * The critical output file in each of these `medaka/<clust_id>` folders is the `<clust_id>.ref_read.medaka.fasta` file containing the __Medaka-polished genome produced from this alignment cluster__. Subsequent Snakemake rules analyze, aggregate, and deduplicate these polished genomes.
+    * `<clust_id>.ref_read.medaka.prodigal.cds.*` files describe the coding sequence annotations from [Prodigal](https://github.com/hyattpd/Prodigal) for this Medaka-polished genome.
+    * `<clust_id>.ref_read.strands.*` files describe the strand abundance for reads in each alignment cluster. Clusters containing >80% reads from a single strand should be treated with suspicion.
+    * `<clust_id>.ref_read.dtr.aligns.*` files describe the results of aligning the DTR sequence from each corresponding k-mer bin to the polished genome from each alignment cluster. If the DTR sequences all align to the same reference positions, the DTR is fixed. However, if they align all over the reference genome, this suggests that a headful DNA packaging mechanism was used. 
     
-Finally, we finish up the pipeline by running a series of annotations, aggregations, and evaluations of the final polished genome sequences. We also use this step to query the sequencing dataset for linear concatemer reads that could represent novel mobile elements. 
+Next, we finish up the genome discovery portion of the pipeline by running a series of aggregations and evaluations of the final polished genome sequences. 
 ```
-snakemake --use-conda -p -j <nproc> -r all_finish_up
+snakemake --use-conda -p -j <nproc> -r all_combine_dedup_summarize
 ```
-XXX
+All output from this step is written to a single directory:
+* `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing`
+    * `polished.seqs.fasta`: The combined set of genomes from each alignment cluster
+    * `polished.seqs.unique.fasta`: Same as above but only containing unique sequences after the deduplication step
+    * `polished.stats.tsv`: Various statistics for each polished genome, including length, GC content, DTR details, cluster strand abundance, CDS annotation statistics, circular permutation status, and many others
+    * `polished.stats.unique.tsv`: Same as above but only containing unique sequences after the deduplication step
+    * `polished.unique.cds.summary.all.png`: Summary plots of summary statistics for the coding sequences (CDS) annotated by Prodigal for each unique polished genome
+    * `polished.unique.cds.summary.dtr_npol10.png`: Same as above but only including polished genomes with a confirmed DTR and at least 10 reads used for polishing
+
+Finally, we run one final step to query the sequencing dataset for linear concatemer reads that could represent interesting mobile elements in the environmental sample.
+```
+snakemake --use-conda -p -j <nproc> -r all_linear_concatemer_reads
+```
+All output from this step is written to a single directory:
+* `<run_output_dir>/concatemers`
+    * `concats.fasta`: All identified concatemeric reads found in the input reads
+    * `concats.tsv`: Statistic for each concatemeric read found, including readname, length, repeat size, and repeat copy count
+    * `concats.contours.png`: Scatter plot with density contours showing the relationship between the observed repeat length and copy count in all identified concatemeric reads.
 
 ## Licence and Copyright
 

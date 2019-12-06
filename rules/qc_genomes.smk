@@ -125,15 +125,3 @@ rule combine_all_draft_stats:
         df = df.join(df_cyc, how='left')
         df = df.join(df_gc, how='left').reset_index().sort_values('clust_id')
         df.to_csv(output[0], sep='\t', index=False)
-
-rule plot_all_prodigal_stats:
-    input: ALL_POL_STATS
-    output:
-        plot1=ALL_POL_CDS_PLOT_ALL,
-        plot2=ALL_POL_CDS_PLOT_DTR_NPOL10,
-    params:
-        pol_dir=MEDAKA_DIR
-    conda: '../envs/clustering.yml'
-    shell:
-        'python {SCRIPT_DIR}/plot_cds_summaries.py --output1={output.plot1} '
-        '--output2={output.plot2} {input}'

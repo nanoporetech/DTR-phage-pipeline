@@ -27,7 +27,7 @@ rule rewrite_pol_fasta_without_seq_duplicates:
         stats=ALL_POL_STATS,
     output: 
         fasta=ALL_POL_UNIQ,
-        stats=ALL_POL_STATS_FILT
+        stats=ALL_POL_STATS_UNIQ
     params:
         minpct=config['NUCMER']['minpct'],
         mincov=config['NUCMER']['mincov'],
@@ -36,3 +36,15 @@ rule rewrite_pol_fasta_without_seq_duplicates:
         'python {SCRIPT_DIR}/dedup_sample_genomes.py -p {params.minpct} '
         '-c {params.mincov} -f {output.fasta} -s {output.stats} '
         '{input.coords} {input.fasta} {input.stats}'
+
+rule plot_all_prodigal_stats:
+    input: ALL_POL_STATS_UNIQ
+    output:
+        plot1=ALL_POL_CDS_PLOT_UNIQ_ALL,
+        plot2=ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
+    params:
+        pol_dir=MEDAKA_DIR
+    conda: '../envs/clustering.yml'
+    shell:
+        'python {SCRIPT_DIR}/plot_cds_summaries.py --output1={output.plot1} '
+        '--output2={output.plot2} {input}'

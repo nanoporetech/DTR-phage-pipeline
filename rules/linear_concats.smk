@@ -17,16 +17,6 @@ rule find_concatemer_read_ids:
         '-o {output} {input}; '
         'rm -rf {params.aln_dir}'
 
-rule plot_concatemer_copies_pdf:
-    input: CONCATEMER_READ_INFO
-    output: 
-        copies=CONCATEMER_READ_PDF_PLOT_COPIES,
-        lengths=CONCATEMER_READ_PDF_PLOT_LENGTHS,
-    conda: '../envs/plot-umap.yml'
-    shell:
-        'python {SCRIPT_DIR}/plot_linear_concat_copy_numbers.py -c {output.copies} '
-        '-l {output.lengths} {input}'
-
 rule plot_concatemer_copy_length_contours:
     input: CONCATEMER_READ_INFO
     output: CONCATEMER_READ_COPY_REPEATS_CONTOURS

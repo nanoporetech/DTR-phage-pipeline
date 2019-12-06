@@ -143,39 +143,37 @@ BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS       = str(MEDAKA_DIR / '{bin_clust_id}
 DTR_ALIGN_PREFIX                 = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read')
 DTR_ALIGN_COORD_PLOT             = '{}.dtr.aligns.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_TSV                    = '{}.dtr.aligns.tsv'.format(DTR_ALIGN_PREFIX)
-DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'all_genomes.medaka.cyclic_permut.stats.tsv')
+DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'polished.cyclic_permut.stats.tsv')
 
 
 ######################################
 # Combine Medaka polished references #
 ######################################
-ALL_POL_PREFIX              = str(POLISH_DIR / 'all_genomes.medaka')
-ALL_POL_UNTRIMMED           = '{}.untrimmed.fasta'.format(ALL_POL_PREFIX)
-ALL_POL_CDS_SUMMARY         = '{}.prodigal.cds.summary.tsv'.format(ALL_POL_PREFIX)
-ALL_POL_CDS_PLOT_ALL        = '{}.prodigal.cds.summary.all.png'.format(ALL_POL_PREFIX)
-ALL_POL_CDS_PLOT_DTR_NPOL10 = '{}.prodigal.cds.summary.dtr_npol10.png'.format(ALL_POL_PREFIX)
-ALL_POL_STRANDS             = '{}.pol_strands.tsv'.format(ALL_POL_PREFIX)
-ALL_POL_STRAND_ANNOTS       = '{}.pol_strands.reads.tsv'.format(ALL_POL_PREFIX)
-ALL_POL                     = '{}.fasta'.format(ALL_POL_PREFIX)
-ALL_POL_UNIQ                = '{}.unique.fasta'.format(ALL_POL_PREFIX)
-ALL_POL_DTR_STATS           = '{}.dtr.stats.tsv'.format(ALL_POL_PREFIX)
-ALL_POL_DTR_GC_STATS        = '{}.dtr.gc.tsv'.format(ALL_POL_PREFIX)
-ALL_POL_NUCMER_PREFIX       = '{}.nuc'.format(ALL_POL_PREFIX)
-ALL_POL_NUCMER_DELTA        = '{}.nuc.delta'.format(ALL_POL_PREFIX)
-ALL_POL_NUCMER_COORDS       = '{}.nuc.coords'.format(ALL_POL_PREFIX)
-ALL_POL_STATS               = '{}.stats.tsv'.format(ALL_POL_PREFIX)
-ALL_POL_STATS_FILT          = '{}.stats.unique.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_PREFIX                   = str(POLISH_DIR / 'polished')
+ALL_POL_UNTRIMMED                = '{}.untrimmed.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_SUMMARY              = '{}.cds.summary.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_STRANDS                  = '{}.pol_strands.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_STRAND_ANNOTS            = '{}.pol_strands.reads.tsv'.format(ALL_POL_PREFIX)
+ALL_POL                          = '{}.seqs.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_UNIQ                     = '{}.seqs.unique.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_DTR_STATS                = '{}.dtr.stats.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_DTR_GC_STATS             = '{}.dtr.gc.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_PREFIX            = '{}.nuc'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_DELTA             = '{}.nuc.delta'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_COORDS            = '{}.nuc.coords'.format(ALL_POL_PREFIX)
+ALL_POL_STATS                    = '{}.stats.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_STATS_UNIQ               = '{}.stats.unique.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_PLOT_UNIQ_ALL        = '{}.unique.cds.all.png'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10 = '{}.unique.cds.dtr_npol10.png'.format(ALL_POL_PREFIX)
 
 #######################################
 # ANALYSIS OF LINEAR CONCATEMER READS #
 #######################################
 CONCATEMER_DIR                                  = OUTPUT_ROOT / SAMPLE / STYPE / VERSION / 'concatemers'
 CONCATEMER_ALIGN_TMP_DIR                        = CONCATEMER_DIR / 'aln_tmp'
-CONCATEMER_READ_INFO                            = str(CONCATEMER_DIR / 'concats_{}_{}.gt{}.tsv'.format(SAMPLE,STYPE,config['LIN_CONCAT']['minlen']))
-CONCATEMER_READ_FASTA                           = str(CONCATEMER_DIR / 'concats_{}_{}.gt{}.fasta'.format(SAMPLE,STYPE,config['LIN_CONCAT']['minlen']))
-CONCATEMER_READ_PDF_PLOT_COPIES                 = str(CONCATEMER_DIR / 'concats_{}_{}.gt{}.kde.copies.png'.format(SAMPLE,STYPE,config['LIN_CONCAT']['minlen']))
-CONCATEMER_READ_PDF_PLOT_LENGTHS                = str(CONCATEMER_DIR / 'concats_{}_{}.gt{}.kde.lengths.png'.format(SAMPLE,STYPE,config['LIN_CONCAT']['minlen']))
-CONCATEMER_READ_COPY_REPEATS_CONTOURS           = str(CONCATEMER_DIR / 'concats_{}_{}.gt{}.contours.png'.format(SAMPLE,STYPE,config['LIN_CONCAT']['minlen']))
+CONCATEMER_READ_INFO                            = str(CONCATEMER_DIR / 'concats.tsv')
+CONCATEMER_READ_FASTA                           = str(CONCATEMER_DIR / 'concats.fasta')
+CONCATEMER_READ_COPY_REPEATS_CONTOURS           = str(CONCATEMER_DIR / 'concats.contours.png')
 
 
 wildcard_constraints:
@@ -204,8 +202,9 @@ include: 'rules/linear_concats.smk'
 # 2. all_kaiju              (optional for taxonomic annotation of UMAP plots)
 # 3. all_populate_kmer_bins
 # 4. all_alignment_clusters
-# 5. all_polishing
-# 6. all_finish_up
+# 5. all_polish_and_annotate
+# 6. all_combine_dedup_summarize
+# 7. all_linear_concatemer_reads
 
 rule all_kmer_count_and_bin:
     input:
@@ -248,16 +247,15 @@ rule all_polish_and_annotate:
         dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
         dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
 
-rule all_finish_up:
+rule all_combine_dedup_summarize:
     input:
-        # ALL_POL_STRANDS,
-        # ALL_POL_STRAND_ANNOTS,
-        ALL_POL_CDS_PLOT_ALL,
-        ALL_POL_CDS_PLOT_DTR_NPOL10,
+        ALL_POL_CDS_PLOT_UNIQ_ALL,
+        ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
         ALL_POL,
         ALL_POL_UNIQ,
-        ALL_POL_STATS,
-        CONCATEMER_READ_PDF_PLOT_COPIES,
-        CONCATEMER_READ_PDF_PLOT_LENGTHS,
+        ALL_POL_STATS
+
+rule all_linear_concatemer_reads:
+    input:
         CONCATEMER_READ_COPY_REPEATS_CONTOURS,
         CONCATEMER_READ_FASTA,
