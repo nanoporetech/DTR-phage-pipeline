@@ -34,7 +34,7 @@ rule plot_concatemer_copy_length_contours:
         sample=SAMPLE
     conda: '../envs/plot-umap.yml'
     shell:
-        'python {SCRIPT_DIR}/plot_linear_concat_reads_hexbin.py -o {output} {input}'
+        'python {SCRIPT_DIR}/plot_linear_concat_reads_contours.py -o {output} {input}'
 
 rule grep_concatemer_seqs:
     input: 

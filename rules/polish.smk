@@ -26,8 +26,7 @@ rule run_medaka:
     input:
         raw_reads=BIN_CLUSTER_POL_READS_FASTA,
         draft=BIN_CLUSTER_RACON_POLISHED_FASTA
-    output:
-        BIN_CLUSTER_POLISHED_REF_TMP
+    output: temp(BIN_CLUSTER_POLISHED_REF_TMP)
     params:
         out_dir=lambda x: str(Path(BIN_CLUSTER_POLISHED_REF_TMP.format(**x)).parent),
         model=config['MEDAKA']['model']
@@ -39,16 +38,12 @@ rule run_medaka:
         'mv {params.out_dir}/consensus.fasta {output}'
 
 rule rename_polished_ref_reads:
-    input: BIN_CLUSTER_POLISHED_REF_TMP
+    input:
+        fasta = BIN_CLUSTER_POLISHED_REF_TMP,
     output: BIN_CLUSTER_POLISHED_REF
-    conda: '../envs/seqkit.yml'
-    shell: 
-         "seqkit replace -p ':\d+\.\d-\d+\.\d' -r '_{wildcards.bin_clust_id}' "
-         '{input} > {output} '
-
-rule combine_all_polished_ref_reads:
-    input: 
-        dirname=MEDAKA_DIR,
-    output: ALL_POLISHED_COMBINED
+    params:
+        aln_clust_dir = BIN_CLUSTER_DIR
+    conda: '../envs/python.yml'
     shell:
-        'cat {input.dirname}/*/*.medaka.fasta > {output}'
+        'python {SCRIPT_DIR}/rename_polished_genome.py -o {output} {input.fasta} '
+        '{params.aln_clust_dir}'

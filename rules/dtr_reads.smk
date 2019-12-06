@@ -16,5 +16,5 @@ rule find_all_DTR_reads:
         chunksize = config['DTR_FIND']['chunksize']
     threads: config['max_threads']
     shell:
-        'python {SCRIPT_DIR}/find_dtr_all_reads.py -t {threads} -p {params.prefix} '
+        'python {SCRIPT_DIR}/find_dtr_all_seqs.py -t {threads} -p {params.prefix} '
         '-d {params.tmpdir} -o {params.ovlp} -c {params.chunksize} {input}'

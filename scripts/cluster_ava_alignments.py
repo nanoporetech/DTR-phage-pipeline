@@ -162,7 +162,6 @@ def run_clustering(df, args, default_sim):
     orig_cmap    = matplotlib.cm.Greys
     shifted_cmap = orig_cmap
     # shifted_cmap = shiftedColorMap(orig_cmap, start=-0.5, midpoint=0.750, name='shifted')
-    # shifted_cmap = shiftedColorMap(orig_cmap, midpoint=0.70, name='shifted')
     axmatrix     = fig.add_axes([mat_xstart, y_start, mat_width, mat_height])
     idx1         = Z1['leaves']
     idx2         = Z2['leaves']

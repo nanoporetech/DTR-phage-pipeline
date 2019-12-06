@@ -23,7 +23,7 @@ def parse_args():
 def main(args):
     fns = glob(os.path.join(args.pol_dir, "*", "*.cds.stats.txt"))
 
-    df = pd.concat([pd.read_csv(fn, sep="\t").set_index("clust") for fn in fns], axis=0)
+    df = pd.concat([pd.read_csv(fn, sep="\t").set_index("clust_id") for fn in fns], axis=0)
 
     df.reset_index().to_csv(args.output, sep="\t", index=False)
 

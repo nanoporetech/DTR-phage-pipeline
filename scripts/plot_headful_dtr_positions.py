@@ -21,7 +21,6 @@ def parse_args():
     # Optional arguments
     parser.add_argument('-p', '--prefix', help='Output files prefix [output]', type=str, default='output')
     parser.add_argument('-o', '--overlap', help='Check for overlaps between the first and last <overlap> percent of the sequence [20]', type=int, default=20)
-    # parser.add_argument('-d', '--tmpdir', help='Path to tmp directory where alignment data is written [./aln_tmp]', type=str, default='aln_tmp')
     parser.add_argument('-t', '--threads', help='Number of threads to use [4]', type=int, default=4)
     parser.add_argument('-c', '--chunk_size', help='Number of reads per chunk [5000]', type=int, default=5000)
 
@@ -212,9 +211,6 @@ def main(args):
     df = pd.concat([pd.read_csv(fname, sep='\t') for fname in tmp_files], axis=0)
 
     dtr_df = align_dtr_seqs(df, args)
-
-    dtr_df['qlen'].hist(bins=40)
-    plt.savefig('{}.dtr.hist.png'.format(args.prefix))
 
     dtr_df = dtr_df.sort_values('tend').reset_index(drop=False).rename(columns={'index':'orig_idx'}).reset_index()
     fig = plt.figure(figsize=[6,10])

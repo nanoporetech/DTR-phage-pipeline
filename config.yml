@@ -73,7 +73,6 @@ DTR_ALIGN:
 NUCMER:
     mincov: 98.0 # Genome-genome percent coverage threshold for deduplicating polished genomes
     minpct: 98.0 # Genome-genome percent identity thresholf for deduplicating polished genomes
-    minpol: 10   # Minimum number of polishing reads for a genome
 
 MINIMAP2:
     STANDARD:
@@ -94,7 +93,6 @@ RACON:
 
 PORECHOP:
     switches: '--no_split'
-    threads: 16
 
 PRODIGAL:
     threads: 4

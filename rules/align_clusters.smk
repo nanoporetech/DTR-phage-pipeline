@@ -23,7 +23,7 @@ rule bin_ava_clustering:
         min_score_frac = config['BIN_AVA_ALIGN']['CLUST']['min_score_frac'],
         min_reads = config['BIN_AVA_ALIGN']['CLUST']['min_reads'],
     shell:
-        'python {SCRIPT_DIR}/find_full_len_align_clusts.py -p {params.prefix} '
+        'python {SCRIPT_DIR}/cluster_ava_alignments.py -p {params.prefix} '
         ' -s {params.min_score_frac} -n {params.min_reads} {input}'
 
 rule combine_bin_cluster_read_info:

@@ -130,8 +130,8 @@ MEDAKA_DIR                                    = POLISH_DIR / 'medaka'
 BIN_CLUSTER_POLISHED_REF_TMP                  = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.tmp.fasta')
 BIN_CLUSTER_POLISHED_REF                      = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.fasta')
 BIN_CLUSTER_POLISHED_POL_VS_REF_PAF           = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.paf')
-BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS       = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.tsv')
-BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.annots.tsv')
+BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS       = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.summary.tsv')
+BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.reads.tsv')
 BIN_CLUSTER_POLISHED_REF_PRODIGAL             = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.fasta')
 BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT         = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.txt')
 BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS       = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.stats.txt')
@@ -141,37 +141,30 @@ BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS       = str(MEDAKA_DIR / '{bin_clust_id}
 # Check for fixed or cyclic permutation #
 #########################################
 DTR_ALIGN_PREFIX                 = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read')
-DTR_ALIGN_HIST_PLOT              = '{}.dtr.hist.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_COORD_PLOT             = '{}.dtr.aligns.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_TSV                    = '{}.dtr.aligns.tsv'.format(DTR_ALIGN_PREFIX)
-DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'all_ref_reads.medaka.cyclic_permut.stats.tsv')
+DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'all_genomes.medaka.cyclic_permut.stats.tsv')
 
 
 ######################################
 # Combine Medaka polished references #
 ######################################
-ALL_POLISHED_PREFIX                              = str(POLISH_DIR / 'all_ref_reads.medaka')
-ALL_POLISHED_COMBINED                            = '{}.fasta'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_CDS_SUMMARY                = '{}.prodigal.cds.summary.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_CDS_PLOT_ALL               = '{}.prodigal.cds.summary.all.png'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_CDS_PLOT_DTR               = '{}.prodigal.cds.summary.dtr.png'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_CDS_PLOT_DTR_NPOL10        = '{}.prodigal.cds.summary.dtr_npol10.png'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_CDS_PLOT_DTR_NPOL20        = '{}.prodigal.cds.summary.dtr_npol20.png'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_STRANDS                    = '{}.pol_strands.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_STRAND_ANNOTS              = '{}.pol_strands.annots.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_STRAND_UMAP                = '{}.pol_strands.annots.umap.png'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED                    = '{}.trimmed.fasta'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_STATS          = '{}.trimmed.dtr.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_GC_ABUND_STATS = '{}.trimmed.dtr.gc.abund.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR                = '{}.trimmed.dtr.fasta'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_UNIQ           = '{}.trimmed.dtr.unique.fasta'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_NUCMER_PREFIX  = '{}.trimmed.dtr.nuc'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_NUCMER_DELTA   = '{}.trimmed.dtr.nuc.delta'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_COMBINED_TRIMMED_DTR_NUCMER_COORDS  = '{}.trimmed.dtr.nuc.coords'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_MGA_CDS_SUMMARY                     = '{}.mga.cds.summary.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_STATS                               = '{}.stats.tsv'.format(ALL_POLISHED_PREFIX)
-ALL_POLISHED_STATS_FILT                          = '{}.stats.filtered.tsv'.format(ALL_POLISHED_PREFIX)
-
+ALL_POL_PREFIX              = str(POLISH_DIR / 'all_genomes.medaka')
+ALL_POL_UNTRIMMED           = '{}.untrimmed.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_SUMMARY         = '{}.prodigal.cds.summary.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_PLOT_ALL        = '{}.prodigal.cds.summary.all.png'.format(ALL_POL_PREFIX)
+ALL_POL_CDS_PLOT_DTR_NPOL10 = '{}.prodigal.cds.summary.dtr_npol10.png'.format(ALL_POL_PREFIX)
+ALL_POL_STRANDS             = '{}.pol_strands.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_STRAND_ANNOTS       = '{}.pol_strands.reads.tsv'.format(ALL_POL_PREFIX)
+ALL_POL                     = '{}.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_UNIQ                = '{}.unique.fasta'.format(ALL_POL_PREFIX)
+ALL_POL_DTR_STATS           = '{}.dtr.stats.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_DTR_GC_STATS        = '{}.dtr.gc.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_PREFIX       = '{}.nuc'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_DELTA        = '{}.nuc.delta'.format(ALL_POL_PREFIX)
+ALL_POL_NUCMER_COORDS       = '{}.nuc.coords'.format(ALL_POL_PREFIX)
+ALL_POL_STATS               = '{}.stats.tsv'.format(ALL_POL_PREFIX)
+ALL_POL_STATS_FILT          = '{}.stats.unique.tsv'.format(ALL_POL_PREFIX)
 
 #######################################
 # ANALYSIS OF LINEAR CONCATEMER READS #
@@ -197,7 +190,7 @@ include: 'rules/kaiju.smk'
 include: 'rules/kmer_bins.smk'
 include: 'rules/align_clusters.smk'
 include: 'rules/polish.smk'
-include: 'rules/prodigal.smk'
+include: 'rules/annotate.smk'
 include: 'rules/qc_genomes.smk'
 include: 'rules/dedup.smk'
 include: 'rules/dtr_align.smk'
@@ -237,7 +230,7 @@ rule all_alignment_clusters:
         expand(ALN_CLUST_OUTPUT_HEATMAP, bin_id=BIN_IDS),
         expand(ALN_CLUST_OUTPUT_INFO, bin_id=BIN_IDS),
 
-rule all_polishing:
+rule all_polish_and_annotate:
     input:
         ALN_CLUST_READS_COMBO,
         dynamic(BIN_CLUSTER_READS_INFO),
@@ -248,31 +241,22 @@ rule all_polishing:
         dynamic(BIN_CLUSTER_POL_READS_FASTA),
         dynamic(BIN_CLUSTER_RACON_POLISHED_FASTA),
         dynamic(BIN_CLUSTER_POLISHED_REF),
-
-rule all_finish_up:
-    input:
         dynamic(DTR_ALIGN_COORD_PLOT),
         dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL),
         dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
         dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
         dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
         dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
-        ALL_POLISHED_COMBINED_STRANDS,
-        ALL_POLISHED_COMBINED_STRAND_ANNOTS,
-        ALL_POLISHED_COMBINED_STRAND_UMAP,
-        ALL_POLISHED_COMBINED_CDS_PLOT_ALL,
-        ALL_POLISHED_COMBINED_CDS_PLOT_DTR,
-        ALL_POLISHED_COMBINED_CDS_PLOT_DTR_NPOL10,
-        ALL_POLISHED_COMBINED_CDS_PLOT_DTR_NPOL20,
-        ALL_POLISHED_COMBINED_CDS_SUMMARY,
-        ALL_POLISHED_COMBINED_TRIMMED,
-        ALL_POLISHED_COMBINED_TRIMMED_DTR_STATS,
-        ALL_POLISHED_COMBINED_TRIMMED_DTR_GC_ABUND_STATS,
-        ALL_POLISHED_COMBINED_TRIMMED_DTR,
-        ALL_POLISHED_COMBINED_TRIMMED_DTR_UNIQ,
-        ALL_POLISHED_STATS,
-        ALL_POLISHED_STATS_FILT,
-        DTR_ALIGN_CYC_PERM_TSV,
+
+rule all_finish_up:
+    input:
+        # ALL_POL_STRANDS,
+        # ALL_POL_STRAND_ANNOTS,
+        ALL_POL_CDS_PLOT_ALL,
+        ALL_POL_CDS_PLOT_DTR_NPOL10,
+        ALL_POL,
+        ALL_POL_UNIQ,
+        ALL_POL_STATS,
         CONCATEMER_READ_PDF_PLOT_COPIES,
         CONCATEMER_READ_PDF_PLOT_LENGTHS,
         CONCATEMER_READ_COPY_REPEATS_CONTOURS,

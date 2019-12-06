@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument('-t', '--threads', help='Number of threads to use [4]', type=int, default=4)
     parser.add_argument('-c', '--chunk_size', help='Number of reads per chunk [5000]', type=int, default=5000)
     parser.add_argument('-m', '--hist_max', help='Maximum read length to include in histogram of DTR read lengths [80000]', type=int, default=80000)
+    parser.add_argument('--no_fasta', help='Do not write FASTA of DTR sequences [False]', action='store_true')
+    parser.add_argument('--no_hist', help='Do not create histogram of DTR sequence lengths [False]', action='store_true')
 
     # Parse arguments
     args = parser.parse_args()
@@ -74,37 +76,6 @@ def subseq_read_and_run_minimap2(read_id, seq, args):
 
     return minimap2_paf,ovlp_len
 
-def subseq_read_and_run_nucmer(read_id, seq, args):
-    prefix    = os.path.join(args.tmpdir, read_id)
-    read_len  = len(seq)
-
-    ovlp_len = int((args.overlap/100) * read_len)
-
-    seq_start = Seq.Seq(seq[:ovlp_len])
-    record    = SeqRecord(seq=seq_start, id=read_id+'.first{}'.format(ovlp_len), description=read_id+'.first{}'.format(ovlp_len))
-    start_fn  = prefix+'.first{}.fa'.format(ovlp_len)
-    SeqIO.write(record, start_fn, 'fasta')
-
-    seq_end   = Seq.Seq(seq[-ovlp_len:])
-    record    = SeqRecord(seq=seq_end, id=read_id+'.last{}'.format(ovlp_len), description=read_id+'.last{}'.format(ovlp_len))
-    end_fn    = prefix+'.last{}.fa'.format(ovlp_len)
-    SeqIO.write(record, end_fn, 'fasta')
-
-    nucmer_out = '%s.out' % read_id.split('|')[0]
-    nucmer_CMD = 'nucmer -p {} -c 10 {} {} > /dev/null 2>&1'.format(prefix, start_fn, end_fn)
-    os.system(nucmer_CMD)
-    delta      = '{}.delta'.format(prefix)
-
-    coords     = '{}.coords'.format(prefix)
-    sc_CMD     = 'show-coords -T -l {} > {}'.format(delta, coords)
-    os.system(sc_CMD)
-
-    os.remove(start_fn)
-    os.remove(end_fn)
-    os.remove(delta)
-
-    return coords,ovlp_len
-
 def write_dtr_stats(df, args):
     fname = '{}.dtr.stats.tsv'.format(args.prefix)
     print('Writing {}'.format(fname))
@@ -113,7 +84,7 @@ def write_dtr_stats(df, args):
 def write_dtr_fasta(df, args, ftype):
     fname = '{}.dtr.fasta'.format(args.prefix)
     print('Writing {}'.format(fname))
-    dtr_ids = df[df['has_dtr']==True]['seq_id']
+    dtr_ids = df[df['has_dtr']==True]['read']
     dtr_seqs = [s for s in SeqIO.parse(args.fastx, ftype) if s.id in dtr_ids.values]
     SeqIO.write(dtr_seqs, fname, 'fasta')
 
@@ -178,7 +149,7 @@ def search_for_dtr( tup ):
 
     read_dtr_stats = {}
 
-    read_dtr_stats['seq_id'] = read_id
+    read_dtr_stats['read'] = read_id
     read_dtr_stats['seq_len'] = len(seq)
     read_dtr_stats['has_dtr'] = dtr
     read_dtr_stats['dtr_length'] = aln_sum
@@ -241,13 +212,16 @@ def main(args):
 
     df = pd.concat([pd.read_csv(fname, sep='\t') for fname in tmp_files], axis=0)
 
-    df[(df['has_dtr']==True) & (df['seq_len']<args.hist_max)].hist('seq_len', bins=50)
-    plt.xlabel('DTR read length (bp)')
-    plt.ylabel('Count')
-    plt.savefig('{}.dtr.hist.png'.format(args.prefix))
+    if not args.no_hist:
+        df[(df['has_dtr']==True) & (df['seq_len']<args.hist_max)].hist('seq_len', bins=50)
+        plt.xlabel('DTR read length (bp)')
+        plt.ylabel('Count')
+        plt.savefig('{}.dtr.hist.png'.format(args.prefix))
+
+    if not args.no_fasta:
+        write_dtr_fasta(df, args, ftype)
 
     write_dtr_stats(df, args)
-    write_dtr_fasta(df, args, ftype)
 
     shutil.rmtree(args.tmpdir)
 

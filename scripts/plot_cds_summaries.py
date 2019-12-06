@@ -14,9 +14,7 @@ def parse_args():
 
     # Optional arguments
     parser.add_argument('--output1', help='Output filename for plot including all polished genomes [polished.cds.stats.all.png]', type=str, default='polished.cds.stats.all.png')
-    parser.add_argument('--output2', help='Output filename for plot including polished genomes with DTRs [polished.cds.stats.dtr.png]', type=str, default='polished.cds.stats.dtr.png')
-    parser.add_argument('--output3', help='Output filename for plot including polished genomes with >=10 polishing reads [polished.cds.stats.n10.png]', type=str, default='polished.cds.stats.n10.png')
-    parser.add_argument('--output4', help='Output filename for plot including polished genomes with >=20 polishing reads [polished.cds.stats.n20.png]', type=str, default='polished.cds.stats.n20.png')
+    parser.add_argument('--output2', help='Output filename for plot including polished genomes with DTRs and >=10 polishing reads [polished.cds.stats.n10.png]', type=str, default='polished.cds.stats.n10.png')
 
     # Parse arguments
     args = parser.parse_args()
@@ -24,7 +22,7 @@ def parse_args():
     return args
 
 def main(args):
-    figs = [args.output1, args.output2, args.output3, args.output4]
+    figs = [args.output1, args.output2]
     df = pd.read_csv(args.stats, sep="\t")
     
     for i,fig_out in enumerate(figs):
@@ -47,17 +45,10 @@ def main(args):
         ax4.set_xlabel("CDS fraction")
 
         if i==0:
-            df = df
-            ax1.set_title("All Prodigal CDS")
+            ax1.set_title("Prodigal CDS for {} genomes".format(df.shape[0]))
         elif i==1:
-            df = df[df["has_dtr"]==True]
-            ax1.set_title("Prodigal CDS for DTR genomes")
-        elif i==2:
             df = df[(df["has_dtr"]==True) & (df["n_pol_reads"]>=10)]
-            ax1.set_title("Prodigal CDS for DTR genomes w/ n_pols>=10")
-        elif i==3:
-            df = df[(df["has_dtr"]==True) & (df["n_pol_reads"]>=20)]
-            ax1.set_title("Prodigal CDS for DTR genomes w/ n_pols>=20")
+            ax1.set_title("Prodigal CDS for {} DTR genomes w/ n_pols>=10".format(df.shape[0]))
 
         mean_n,mean_sum,mean_mean,mean_frac = df.loc[:,["cds_n", "cds_sum", "cds_mean", "cds_frac"]].mean(axis=0)
 

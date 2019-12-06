@@ -20,7 +20,7 @@ def parse_args():
     return args
 
 def main(args):
-    cluster_id = os.path.basename(args.cds).split(".")[0]
+    cluster_id = os.path.basename(args.cds).split('.')[0]
 
     cds_bases = 0
     cds_count = 0
@@ -28,17 +28,17 @@ def main(args):
     for header,seq in SimpleFastaParser(open(args.genome)):
         ref_len = len(seq)
 
-    with open(args.output, "w") as f:
-        f.write("clust\tread\tref_len\tcds_n\tcds_sum\tcds_mean\tcds_frac\n")
+    with open(args.output, 'w') as f:
+        f.write('clust_id\tread\tref_len\tcds_n\tcds_sum\tcds_mean\tcds_frac\n')
         
         for header,seq in SimpleFastaParser(open(args.cds)):
-            ref_read   = header.split(" ")[0]
+            ref_read   = header.split(' ')[0].split('_')[0]
             cds_bases += len(seq)
             cds_count += 1
 
         cds_mean = float(cds_bases) / cds_count
         cds_frac = float(cds_bases) / ref_len
-        f.write("{}\t{}\t{}\t{}\t{}\t{:.2f}\t{:.2f}\n".format(cluster_id,ref_read,ref_len,cds_count,cds_bases,cds_mean,cds_frac))
+        f.write('{}\t{}\t{}\t{}\t{}\t{:.2f}\t{:.2f}\n'.format(cluster_id,ref_read,ref_len,cds_count,cds_bases,cds_mean,cds_frac))
 
 if __name__=='__main__':
     args = parse_args()
