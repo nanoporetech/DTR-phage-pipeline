@@ -25,9 +25,8 @@ conda env create -f environment.yml
 ```
 That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake step (described below) is executed.
 
-## Usage
+## Pipeline configuration
 
-### Pipeline configuration
 The pipeline determines the input files, output path, and the various software parameters from the file `config.yml`, which contains key:value pairs that control how the pipeline runs. 
 1. Attention must be paid to the first section of `config.yml` ('Editing mandatory'), as these might change from run to run.
     - `sample`: name of the sample (e.g. 25m)
@@ -45,8 +44,11 @@ The pipeline determines the input files, output path, and the various software p
 
 2. The second section of `config.yml` ('Editing optional') contains software parameters that can be adjusted, but should perform sufficiently well in most cases using the default values.
 
-### Pipeline execution
-The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in multiple steps. The first step provides summary plots for the input reads, identifies reads containing DTR sequences, creates k-mer count vectors, embeds these vectors into 2-d via [UMAP](https://github.com/lmcinnes/umap), and calls bins in the embedding via [HDBSCAN](https://github.com/lmcinnes/HDBSCAN). 
+## Pipeline execution
+The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in multiple steps. 
+
+### *Step 1*
+The first step provides summary plots for the input reads, identifies reads containing DTR sequences, creates k-mer count vectors, embeds these vectors into 2-d via [UMAP](https://github.com/lmcinnes/umap), and calls bins in the embedding via [HDBSCAN](https://github.com/lmcinnes/HDBSCAN). 
 ```
 snakemake --use-conda -p -j <nproc> -r all_kmer_count_and_bin
 ```
@@ -64,7 +66,7 @@ Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. Th
     * `kmer_comp.umap.*.png`: Variety of scatter plots of [UMAP](https://github.com/lmcinnes/umap) embedding of k-mer count vectors, annoted by features including GC-content, read length, and bin assigned by [HDBSCAN](https://github.com/lmcinnes/HDBSCAN)
     * `kmer_comp.umap.bins.tsv`: Mean x- and y-coordinates for each bin assigned by HDBSCAN (for finding bins in 2-d embedding)
     
-
+### *Step 2*
 The next step annotates reads using Kaiju and is not strictly required for producing polished genomes. However, it can be informative for verifying the integrity of the k-mer bins and for other downstream analyses.
 ```
 snakemake --use-conda -p -j <nproc> -r all_kaiju
@@ -76,6 +78,7 @@ Some of the output files for this step include:
 * `<run_output_dir>/kmer_binning`
     * `kmer_comp.umap.nr_euk.[0-6].png`: Scatter plots of UMAP embedding of k-mer count vectors, annotated by various levels of taxonomic annotation
 
+### *Step 3*
 The next step simply populates subdirectories with the binned reads as assigned by HDBSCAN.
 ```
 snakemake --use-conda -p -j <nproc> -r all_populate_kmer_bins
@@ -84,6 +87,7 @@ These subdirectories are located in the `kmer_binning` directory:
 * `<run_output_dir>/kmer_binning/bins/<bin_id>`
 * Each bin subdirectory contains a list of binned read names (`read_list.txt`) and an associated FASTA file of reads (`<bin_id>.reads.fa`)
 
+### *Step 4*
 Next, each k-mer bin is refined by all-vs-all aligning all reads within a bin. The resulting alignment scores are clustered hierarchically and refined alignment clusters are called from the clustering.
 ```
 snakemake --use-conda -p -j <nproc> -r all_alignment_clusters
@@ -92,6 +96,7 @@ The bin refinement results for each k-mer bin are also placed in `kmer_binning` 
 * `<run_output_dir>/kmer_binning/refine_bins/align_clusters/<bin_id>`
 * Each bin refinement procedure generates an alignment (`<bin_id>.ava.paf`), clustering heatmap (`<bin_id>.clust.heatmap.png`), and information on alignment cluster assignments (`<bin_id>.clust.info.tsv`)
 
+### *Step 5*
 Next, a single read is selected from each valid alignment cluster and is polished by the remaining reads in the alignment cluster. Polishing is first done using multiple rounds of [Racon](https://github.com/isovic/racon) (3x by default), then is finished using a single round of [Medaka](https://github.com/nanoporetech/medaka) polishing.
 ```
 snakemake --use-conda -p -j <nproc> -r all_polish_and_annotate
@@ -104,7 +109,8 @@ This step produces polished output in the following directories:
     * `<clust_id>.ref_read.medaka.prodigal.cds.*` files describe the coding sequence annotations from [Prodigal](https://github.com/hyattpd/Prodigal) for this Medaka-polished genome.
     * `<clust_id>.ref_read.strands.*` files describe the strand abundance for reads in each alignment cluster. Clusters containing >80% reads from a single strand should be treated with suspicion.
     * `<clust_id>.ref_read.dtr.aligns.*` files describe the results of aligning the DTR sequence from each corresponding k-mer bin to the polished genome from each alignment cluster. If the DTR sequences all align to the same reference positions, the DTR is fixed. However, if they align all over the reference genome, this suggests that a headful DNA packaging mechanism was used. 
-    
+
+### *Step 6*
 Next, we finish up the genome discovery portion of the pipeline by running a series of aggregations and evaluations of the final polished genome sequences. 
 ```
 snakemake --use-conda -p -j <nproc> -r all_combine_dedup_summarize
@@ -118,6 +124,7 @@ All output from this step is written to a single directory:
     * `polished.unique.cds.summary.all.png`: Summary plots of summary statistics for the coding sequences (CDS) annotated by Prodigal for each unique polished genome
     * `polished.unique.cds.summary.dtr_npol10.png`: Same as above but only including polished genomes with a confirmed DTR and at least 10 reads used for polishing
 
+### *Step 7*
 Finally, we run one final step to query the sequencing dataset for linear concatemer reads that could represent interesting mobile elements in the environmental sample.
 ```
 snakemake --use-conda -p -j <nproc> -r all_linear_concatemer_reads
