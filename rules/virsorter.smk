@@ -28,16 +28,14 @@ rule virsorter_identify_phage:
         fasta=phage_fasta_files + prophage_fasta_files
     conda: '../envs/virsorter.yml'
     params:
-        output_dir=VIRSORTER_DIR,
-        db=config['VIRSORTER']['db'],
         virome="--virome" if config['VIRSORTER']['virome'] else "",
         diamond="--diamond" if config['VIRSORTER']['diamond'] else "",
     threads: config['max_threads']
     shell:
         'wrapper_phage_contigs_sorter_iPlant.pl -f {input} \
-         --wdir {params.output_dir} \
-         --data-dir {params.data_dir} \
-         --db {params.db} --ncpu {threads} \
+         --wdir {VIRSORTER_DIR} \
+         --data-dir {config[VIRSORTER][data_dir]} \
+         --db {config[VIRSORTER][db]} --ncpu {threads} \
          {params.virome} {params.diamond}'
 
 rule virsorter_collect_phage:
