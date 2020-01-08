@@ -47,6 +47,17 @@ DTR_READS_FASTA              = '{}.dtr.fasta'.format(str(DTR_READS_PREFIX))
 DTR_READS_STATS              = '{}.dtr.stats.tsv'.format(str(DTR_READS_PREFIX))
 DTR_READS_HIST               = '{}.dtr.hist.png'.format(str(DTR_READS_PREFIX))
 
+###################################
+# VIRSORTER FILES                 #
+###################################
+VIRSORTER_DIR            = OUTPUT_ROOT / SAMPLE / STYPE / VERSION / 'virsorter'
+VIRSORTER_FASTA          = VIRSORTER_DIR / 'all_phage.fasta'
+
+pre_filter = config['pre_filter'].upper()
+FILTERED_FASTA = VIRSORTER_FASTA if pre_filter == "VIRSORTER" \
+                                 else DTR_READS_FASTA if pre_filter == "DTR" \
+                                 else READS_IMPORT_FASTA
+
 
 ###################################
 # KAIJU CLASSIFICATION            #
@@ -184,6 +195,7 @@ wildcard_constraints:
 
 include: 'rules/summary.smk'
 include: 'rules/dtr_reads.smk'
+include: 'rules/virsorter.smk'
 include: 'rules/kaiju.smk'
 include: 'rules/kmer_bins.smk'
 include: 'rules/align_clusters.smk'

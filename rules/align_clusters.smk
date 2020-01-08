@@ -70,7 +70,7 @@ rule create_bin_cluster_read_lists:
 rule get_cluster_reads_fasta:
     input: 
         clustreads=BIN_CLUSTER_READS_LIST,
-        allfasta=DTR_READS_FASTA
+        allfasta=FILTERED_FASTA
     output: BIN_CLUSTER_READS_FASTA
     conda: '../envs/seqkit.yml'
     shell:
@@ -94,7 +94,7 @@ rule select_read_with_longest_DTR:
 rule create_bin_cluster_ref_fasta:
     input: 
         readlist=BIN_CLUSTER_REF_READ_LIST,
-        fasta=DTR_READS_FASTA,
+        fasta=FILTERED_FASTA,
     output: BIN_CLUSTER_REF_READ_FASTA
     conda: '../envs/seqkit.yml'
     shell:
@@ -103,7 +103,7 @@ rule create_bin_cluster_ref_fasta:
 rule create_bin_cluster_pol_fastqs:
     input: 
         readlist=BIN_CLUSTER_POL_READS_LIST,
-        fasta=DTR_READS_FASTA,
+        fasta=FILTERED_FASTA,
     output: BIN_CLUSTER_POL_READS_FASTA
     conda: '../envs/seqkit.yml'
     shell:

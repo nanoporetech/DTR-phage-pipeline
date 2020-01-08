@@ -3,7 +3,7 @@
 #################################
 
 rule calc_kmer_freq:
-    input: DTR_READS_FASTA
+    input: FILTERED_FASTA
     output: temp(KMER_FREQS_TMP)
     conda: '../envs/python.yml'
     params: 
@@ -55,7 +55,7 @@ rule label_umap_freq_map_with_qscore:
 rule label_umap_freq_map_with_gc_content:
     input: 
         umap = KMER_FREQS_UMAP,
-        fasta = DTR_READS_FASTA
+        fasta = FILTERED_FASTA
     output: KMER_FREQS_UMAP_GC
     params:
         size = config['UMAP']['scatter_size'],
@@ -68,7 +68,7 @@ rule label_umap_freq_map_with_gc_content:
 rule label_umap_freq_map_with_readlength:
     input: 
         umap = KMER_FREQS_UMAP,
-        fastx = DTR_READS_FASTA
+        fastx = FILTERED_FASTA
     output: KMER_FREQS_UMAP_READLENGTH
     params:
         min_rl=config['UMAP']['min_rl'],
@@ -139,7 +139,7 @@ rule create_kmer_bins:
 rule kmer_binned_fasta:
     input:
         read_list=BIN_READLIST,
-        reads_fasta=DTR_READS_FASTA,
+        reads_fasta=FILTERED_FASTA,
     output: BIN_FASTA
     conda: '../envs/seqkit.yml'
     shell:
