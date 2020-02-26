@@ -148,6 +148,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ## References and Supporting Information
 
-A version of this pipeline is described in a preprint:
+This pipeline is described in Genome Research:
 
-Beaulaurier J., Luo E., Eppley J., Den Uyl P., Dai X., Turner D.J., Pendelton M., Juul S., Harrington E., DeLong E.F. Assembly-free single-molecule nanopore sequencing recovers complete virus genomes from natural microbial communities. bioRxiv, [doi.org/10.1101/619684](https://www.biorxiv.org/content/10.1101/619684v1) (2019).
+Beaulaurier J., Luo E., Eppley J., Den Uyl P., Dai X., Turner D.J., Pendelton M., Juul S., Harrington E., DeLong E.F. Assembly-free single-molecule sequencing recovers complete virus genomes from natural microbial communities. Genome Research (2020). [doi:10.1101/gr.251686.119] (https://genome.cshlp.org/content/early/2020/02/19/gr.251686.119.abstract)
