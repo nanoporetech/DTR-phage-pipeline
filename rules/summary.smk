@@ -4,11 +4,10 @@
 
 rule summary_stats:
     input: 
-        all_summary = READS_IMPORT_SUMMARY
+        all_summary=READS_IMPORT_SUMMARY
     output:
         plot=SUMMARY_PLOT,
     run:
-        import pandas as pd
         import matplotlib; matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import numpy as np

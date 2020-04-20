@@ -28,7 +28,7 @@ rule run_medaka:
         draft=BIN_CLUSTER_RACON_POLISHED_FASTA
     output: temp(BIN_CLUSTER_POLISHED_REF_TMP)
     params:
-        out_dir=lambda x: str(Path(BIN_CLUSTER_POLISHED_REF_TMP.format(**x)).parent),
+        out_dir=lambda x: str(Path(str(BIN_CLUSTER_POLISHED_REF_TMP).format(**x)).parent),
         model=config['MEDAKA']['model']
     threads: config['MEDAKA']['threads']
     conda: '../envs/medaka-0.11.0.yml'
@@ -39,11 +39,13 @@ rule run_medaka:
 
 rule rename_polished_ref_reads:
     input:
-        fasta = BIN_CLUSTER_POLISHED_REF_TMP,
+        fasta=BIN_CLUSTER_POLISHED_REF_TMP,
+        ref_read_list=BIN_CLUSTER_REF_READ_LIST,
+        pol_reads_list=BIN_CLUSTER_POL_READS_LIST,
     output: BIN_CLUSTER_POLISHED_REF
-    params:
-        aln_clust_dir = BIN_CLUSTER_DIR
     conda: '../envs/python.yml'
     shell:
-        'python {SCRIPT_DIR}/rename_polished_genome.py -o {output} {input.fasta} '
-        '{params.aln_clust_dir}'
+        'python {SCRIPT_DIR}/rename_polished_genome.py -o {output} '
+        '{input.fasta} '
+        '{input.ref_read_list} '
+        '{input.pol_reads_list}'

@@ -19,53 +19,62 @@ rule bin_ava_clustering:
         info = ALN_CLUST_OUTPUT_INFO
     conda: '../envs/clustering.yml'
     params:
-        prefix = ALN_CLUST_OUTPUT_PREFIX,
+        prefix = str(ALN_CLUST_OUTPUT_PREFIX),
         min_score_frac = config['BIN_AVA_ALIGN']['CLUST']['min_score_frac'],
         min_reads = config['BIN_AVA_ALIGN']['CLUST']['min_reads'],
     shell:
         'python {SCRIPT_DIR}/cluster_ava_alignments.py -p {params.prefix} '
         ' -s {params.min_score_frac} -n {params.min_reads} {input}'
 
-rule combine_bin_cluster_read_info:
+checkpoint combine_bin_cluster_read_info:
     input:
-        read_select_dir=ALN_CLUST_DIR
+        clust_info_csvs=lambda w: expand(str(ALN_CLUST_OUTPUT_INFO), \
+                                         bin_id=get_kmer_bins_good(w)),
     output: 
         combined=ALN_CLUST_READS_COMBO
     run:
-        import os,sys
-        import pandas as pd
-        from glob import glob
-        read_select_dir = str(input.read_select_dir)
-        fns = glob(os.path.join(read_select_dir, '*', '*.clust.info.csv'))
+        fns = input.clust_info_csvs
         df = pd.concat([pd.read_csv(fn) for fn in fns], ignore_index=True)
         df = df.sort_values(['bin_id', 'cluster'])
-        df.to_csv(output.combined, index=False)
+        print(f"Writing to {output.combined}")
+        df.to_csv(str(output.combined), index=False)
 
 ############################################
 # Separate out read ID's from each cluster #
 ############################################
 
+def get_bin_clusters(wildcards):
+    """ Use combo output from the checkpoint to get list of bin_clust_ids """
+    chkpt = checkpoints.combine_bin_cluster_read_info
+    with chkpt.get().output.combined.open() as table:
+        return [f"{b}_{c}" \
+                for b,c in pd.read_csv(table) \
+                             .groupby(['bin_id', 'cluster']) \
+                             .groups]
+
+def get_polished_bin_outputs(wildcards, templates=POLISHED_TEMPLATE_LIST):
+    bin_output_list = []
+    final_bin_list = get_bin_clusters(wildcards)
+    for filename_template in templates:
+        bin_output_list.extend(expand(str(filename_template),
+                                      bin_clust_id=final_bin_list))
+    return bin_output_list
+
 rule create_bin_cluster_read_lists:
+    """ split bin cluster info by clusters """
     input: 
-        clust_reads=ALN_CLUST_READS_COMBO
-    output:
-        readlist=dynamic(BIN_CLUSTER_READS_LIST),
-        readinfo=dynamic(BIN_CLUSTER_READS_INFO),
-    params:
-        bin_cluster_dir=BIN_CLUSTER_DIR
+        # get bin_id form bin_clust_id
+        clust_info=lambda w: str(ALN_CLUST_OUTPUT_INFO).format(
+                                    bin_id=w.bin_clust_id.split("_")[0])
+    output: 
+        readlist=BIN_CLUSTER_READS_LIST,
+        readinfo=BIN_CLUSTER_READS_INFO,
     run: 
-        import os,sys
-        import pandas as pd
-        df   = pd.read_csv(input.clust_reads)
-        df_g = df.groupby(['bin_id', 'cluster'])
-        for (bin_id,clust),df_ in df_g:
-            bin_clust_id = '{}_{}'.format(str(bin_id), str(clust))
-            clust_outdir = Path(os.path.join(params.bin_cluster_dir, bin_clust_id))
-            clust_outdir.mkdir(exist_ok=True)
-            clust_reads_file = clust_outdir / '{}.readlist.csv'.format(bin_clust_id)
-            df_['read_id'].to_csv(clust_reads_file, index=False)
-            clust_info_file = clust_outdir / '{}.readinfo.csv'.format(bin_clust_id)
-            df_.to_csv(clust_info_file, index=False)
+        # parse table; filter by cluster
+        bin_id, clust_id = wildcards.bin_clust_id.split("_")
+        df_clust = pd.read_csv(input.clust_info).query('cluster == @clust_id')
+        df_clust['read_id'].to_csv(output.readlist, index=False, header=False)
+        df_clust.to_csv(output.readinfo, index=False)
 
 rule get_cluster_reads_fasta:
     input: 
@@ -83,13 +92,12 @@ rule select_read_with_longest_DTR:
         ref=BIN_CLUSTER_REF_READ_LIST,
         pol=BIN_CLUSTER_POL_READS_LIST
     run:
-        import pandas as pd
         clust_info_df = pd.read_csv(input.cluster_info)
         ref_idx  = clust_info_df['clust_read_score'].idxmax()
         ref_read = clust_info_df.loc[ref_idx, ['read_id']]
         pol_reads = clust_info_df[~clust_info_df['read_id'].isin(ref_read.values)]['read_id']
-        ref_read.to_csv(output.ref, index=False)
-        pol_reads.to_csv(output.pol, index=False)
+        ref_read.to_csv(output.ref, index=False, header=False)
+        pol_reads.to_csv(output.pol, index=False, header=False)
 
 rule create_bin_cluster_ref_fasta:
     input: 

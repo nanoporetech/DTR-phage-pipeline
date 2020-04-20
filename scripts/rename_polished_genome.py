@@ -10,7 +10,8 @@ def parse_args():
 
     # Positional mandatory arguments
     parser.add_argument('fasta', help='Fasta file containing polished genome', type=str)
-    parser.add_argument('align_clust_dir', help='Directory containing subdirectories of read info for each alignment cluster', type=str)
+    parser.add_argument('ref_read_list', help='File with list of reference reads for the  cluster', type=str)
+    parser.add_argument('pol_reads_list', help='List of reads in  cluster', type=str)
 
     # Optional arguments
     parser.add_argument('-o', '--output', help='Output FASTA file [polished.renamed.fasta]', type=str, default='polished.renamed.fasta')
@@ -21,15 +22,18 @@ def parse_args():
     return args
 
 def get_clust_info(args, clust_id):
-    clust_dir = os.path.join(args.align_clust_dir, clust_id)
-    n_pols = pd.read_csv(os.path.join(clust_dir, '{}.pol_readlist.csv'.format(clust_id)), header=None).shape[0]
-    ref_read = open(os.path.join(clust_dir, '{}.ref_readlist.csv'.format(clust_id))).read().strip('\n')
-    return ref_read,n_pols
+    """ parse the read list csv file for cluster info """
+    # number of polishing reads
+    n_pols = len(open(args.pol_reads_list).readlines())
+    # reference read
+    ref_read = open(args.ref_read_list).readlines()[-1].strip()
+    return ref_read, n_pols
 
 def main(args):
+    # get the cluster ID from the path name
     clust_id = os.path.basename(args.fasta).split('.')[0]
 
-    ref_read,n_pols = get_clust_info(args, clust_id)
+    ref_read, n_pols = get_clust_info(args, clust_id)
 
     new_entry = []
     for Entry in SeqIO.parse(args.fasta, 'fasta'):

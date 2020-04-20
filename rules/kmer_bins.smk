@@ -81,6 +81,7 @@ rule label_umap_freq_map_with_readlength:
         '-n {params.max_cb_rl} -s {params.size} -a {params.alpha} {input.umap} {input.fastx}'
 
 rule call_umap_freq_map_bins:
+    """ Determines the bins """
     input: KMER_FREQS_UMAP
     output: KMER_BINS_MEMBERSHIP
     conda: '../envs/umap.yml'
@@ -88,6 +89,29 @@ rule call_umap_freq_map_bins:
         min_cluster = config['UMAP']['bin_min_reads'],
     shell:
         'python {SCRIPT_DIR}/run_hdbscan.py -o {output} -c {params.min_cluster} {input}'
+
+checkpoint list_kmer_bin_ids:
+    """ 
+    pull out list of bin IDs for quick parsing 
+    we could checkpoint KMER_BINS_MEMBERSHIP instead, but this will be faster to parse each time we need it.
+    """
+    input: KMER_BINS_MEMBERSHIP
+    output: KMER_BINS_LIST
+    shell: "cut -f 6 {input} | tail -n+2 | sort | uniq > {output}"
+
+def get_kmer_bins_all(wildcards):
+    """ special checkpoint-aware input function that
+        will get re-evaluated after the above checkpoint is run
+
+        returns list of bin ids
+    """
+    with checkpoints.list_kmer_bin_ids.get().output[0].open() as f:
+        bins = [line.strip() for line in f]
+        return bins
+
+def get_kmer_bins_good(wildcards):
+    """ same as above, but skips selected bins (from config file) """
+    return [b for b in get_kmer_bins_all(wildcards) if int(b) not in SKIP_BINS]
 
 rule plot_umap_freq_map_bins:
     input: KMER_BINS_MEMBERSHIP
@@ -118,23 +142,16 @@ rule label_umap_freq_map_with_tax:
 ###################################
 
 rule create_kmer_bins:
+    """ rewritten to run once per bin for convenience (will be a bit slower) """
     input: 
-        bin_membership = KMER_BINS_MEMBERSHIP,
-        all_reads = KMER_FREQS,
-    output: dynamic(BIN_READLIST)
-    params:
-        binned_dir = str(BINS_DIR)
+        bin_membership=KMER_BINS_MEMBERSHIP,
+    output:
+        read_file=BIN_READLIST
     run:
-        import os
-        from pathlib import Path
-        import pandas as pd
-        df = pd.read_csv(input.bin_membership, sep='\t')
-        for j in df['bin_id'].unique():
-            outdir = Path(os.path.join(params.binned_dir, str(j)))
-            outdir.mkdir(exist_ok=True)
-            read_file = outdir / 'read_list.txt'
-            with read_file.open('w') as fh:
-                fh.write('%s\n' % '\n'.join(df[df['bin_id']==j]['read'].unique()))
+        bin_id = wildcards.bin_id
+        df = pd.read_csv(input.bin_membership, sep='\t').query('bin_id == @bin_id')
+        with open(output.read_file, 'w') as fh:
+            fh.write('%s\n' % '\n'.join(df['read'].unique()))
 
 rule kmer_binned_fasta:
     input:
@@ -157,8 +174,6 @@ rule generate_bin_stats:
     params:
         bins_dir = str(BINS_DIR)
     run:
-        import pandas as pd
-        import os
         df = pd.read_csv(input.bins, sep='\t')
         df['bases'] = df.groupby('bin_id')['length'].transform('sum')
         df['genomesize'] = df.groupby('bin_id')['length'].transform('mean')

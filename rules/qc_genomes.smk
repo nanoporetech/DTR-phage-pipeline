@@ -63,9 +63,6 @@ rule combine_bin_cluster_strand_counts_into_table:
         counts=temp(ALL_POL_STRANDS),
         annots=temp(ALL_POL_STRAND_ANNOTS)
     run:
-        import os
-        import pandas as pd
-        from glob import glob
         count_fns = glob(os.path.join(input.pol_dir, '*', '*.ref_read.strands.summary.tsv'))
         count_dfs = [pd.read_csv(fn, sep='\t') for fn in count_fns]
         count_df  = pd.concat(count_dfs)
@@ -84,9 +81,6 @@ rule combine_dtr_aligns:
     output: 
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
-        import os
-        import pandas as pd
-        from glob import glob
         fns = glob(os.path.join(input.medaka_dir, '*', '*.dtr.aligns.tsv'))
         df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
         df['dtr_len'] = df['tend'] - df['tstart']
@@ -113,7 +107,6 @@ rule combine_all_draft_stats:
         cyc_perm_stats = DTR_ALIGN_CYC_PERM_TSV
     output: ALL_POL_STATS
     run:
-        import pandas as pd
         df_gc     = pd.read_csv(input.dtr_gc_stats, sep='\t').set_index('clust_id')
         df_cds    = pd.read_csv(input.cds_stats, sep='\t').set_index('clust_id')
         df_strand = pd.read_csv(input.strand_stats, sep='\t').set_index('clust_id')

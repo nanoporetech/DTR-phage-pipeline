@@ -46,10 +46,7 @@ rule parse_align_clust_strands_paf:
         counts=BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS,
         annots=BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS
     run:
-        import os
-        import re
-        import pandas as pd
-        clust_id = os.path.basename(input.paf).split('.')[0]
+        clust_id = wildcards.bin_clust_id
         cols = ['qname', 'qlen', 'qstart', 'qend', 'strand', 'tname', \
                 'tlen', 'tstart', 'tend', 'matches', 'alnlen', 'mapqv']
         paf   = pd.read_csv(input.paf, sep='\t', header=None, usecols=list(range(12)), names=cols)
