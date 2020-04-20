@@ -155,18 +155,11 @@ DTR_ALIGN_COORD_PLOT             = '{}.dtr.aligns.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_TSV                    = '{}.dtr.aligns.tsv'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'polished.cyclic_permut.stats.tsv')
 
-# List of templates to exapand for the all_polish_and_annotate rule
-POLISHED_TEMPLATE_LIST = [ \
-    BIN_CLUSTER_READS_INFO, \
-    BIN_CLUSTER_READS_LIST, \
-    BIN_CLUSTER_REF_READ_LIST, \
+# List of templates to exapand for final targets
+POLISHED_TEMPLATE_TARGET_LIST = [ \
     BIN_CLUSTER_REF_READ_FASTA, \
-    BIN_CLUSTER_POL_READS_LIST, \
     BIN_CLUSTER_POL_READS_FASTA, \
-    BIN_CLUSTER_RACON_POLISHED_FASTA, \
-    BIN_CLUSTER_POLISHED_REF, \
     DTR_ALIGN_COORD_PLOT, \
-    BIN_CLUSTER_POLISHED_REF_PRODIGAL, \
     BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT, \
     BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS, \
     BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS, \
@@ -234,6 +227,29 @@ include: 'rules/linear_concats.smk'
 # 6. all_combine_dedup_summarize
 # 7. all_linear_concatemer_reads
 
+rule all:
+    input:
+        SUMMARY_PLOT,
+        KMER_FREQS_UMAP_QSCORE,
+        KMER_FREQS_UMAP_GC,
+        KMER_FREQS_UMAP_READLENGTH,
+        KMER_FREQS_UMAP_BINS_PLOT,
+        KAIJU_RESULTS_KRONA_HTML,
+        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+        KMER_BIN_STATS,
+        lambda w: expand(str(ALN_CLUST_OUTPUT_HEATMAP), \
+                         bin_id=get_kmer_bins_good(w)),
+        ALN_CLUST_READS_COMBO,
+        get_polished_bin_outputs,  # expands all of POLISHED_TEMPLATE_TARGET_LIST
+                                   # (see rules/align_clusters.smk)
+        ALL_POL_CDS_PLOT_UNIQ_ALL,
+        ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
+        ALL_POL,
+        ALL_POL_UNIQ,
+        ALL_POL_STATS
+
+## The orignal pieces
+
 rule all_kmer_count_and_bin:
     input:
         SUMMARY_PLOT,
@@ -277,3 +293,4 @@ rule all_linear_concatemer_reads:
     input:
         CONCATEMER_READ_COPY_REPEATS_CONTOURS,
         CONCATEMER_READ_FASTA,
+

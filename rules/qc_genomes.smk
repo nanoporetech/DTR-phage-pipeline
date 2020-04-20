@@ -3,8 +3,8 @@
 ############################
 
 rule combine_all_polished_ref_reads:
-    input: 
-        dirname=MEDAKA_DIR,
+    input: lambda w: expand(BIN_CLUSTER_POLISHED_REF, \
+                            bin_clust_id=get_bin_clusters(w))
     output: temp(ALL_POL_UNTRIMMED)
     shell:
         'cat {input.dirname}/*/*.medaka.fasta > {output}'
@@ -34,13 +34,13 @@ rule find_all_DTR_genomes:
         '-p {params.prefix} -o {params.ovlp} -c {params.chunksize} {input}'
 
 rule aggregate_prodigal_statistics:
+    input: lambda w: expand(BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS, \
+                            bin_clust_id=get_bin_clusters(w))
     output:
         table=temp(ALL_POL_CDS_SUMMARY),
-    params:
-        pol_dir=MEDAKA_DIR
     conda: '../envs/clustering.yml'
     shell:
-        'python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {params.pol_dir}'
+        'python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {input}'
 
 rule build_bin_cluster_summary_table:
     input:
@@ -58,31 +58,30 @@ rule build_bin_cluster_summary_table:
 
 rule combine_bin_cluster_strand_counts_into_table:
     input: 
-        pol_dir=MEDAKA_DIR
+        counts=lambda w: expand(BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS, \
+                                bin_clust_id=get_bin_clusters(w)),
+        annots=lambda w: expand(BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS, \
+                                bin_clust_id=get_bin_clusters(w)), 
     output:
         counts=temp(ALL_POL_STRANDS),
         annots=temp(ALL_POL_STRAND_ANNOTS)
     run:
-        count_fns = glob(os.path.join(input.pol_dir, '*', '*.ref_read.strands.summary.tsv'))
-        count_dfs = [pd.read_csv(fn, sep='\t') for fn in count_fns]
+        count_dfs = [pd.read_csv(fn, sep='\t') for fn in input.counts]
         count_df  = pd.concat(count_dfs)
         count_df['bin']     = count_df['clust_id'].map(lambda x: int(x.split('_')[0]))
         count_df['cluster'] = count_df['clust_id'].map(lambda x: int(x.split('_')[1]))
         count_df            = count_df.sort_values(['bin','cluster']).drop(['bin','cluster'], axis=1).round({'frac_pos': 2, 'frac_neg': 2})
         count_df.to_csv(output.counts, sep='\t', index=False)
-        annot_fns = glob(os.path.join(input.pol_dir, '*', '*.ref_read.strands.reads.tsv'))
-        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in annot_fns]
+        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in input.annots]
         annot_df  = pd.concat(annot_dfs)
         annot_df.to_csv(output.annots, sep='\t', index=False)
 
 rule combine_dtr_aligns:
-    input:
-        medaka_dir = MEDAKA_DIR
+    input: lambda w: expand(DTR_ALIGN_TSV, bin_clust_ids=get_bin_clusters(w))
     output: 
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
-        fns = glob(os.path.join(input.medaka_dir, '*', '*.dtr.aligns.tsv'))
-        df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
+        df = pd.concat([pd.read_csv(fn, sep='\t') for fn in input])
         df['dtr_len'] = df['tend'] - df['tstart']
         df['left_dist'] = df['tend']
         df['right_dist'] = df['tlen'] - df['tstart']

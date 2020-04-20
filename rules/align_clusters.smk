@@ -52,7 +52,11 @@ def get_bin_clusters(wildcards):
                              .groupby(['bin_id', 'cluster']) \
                              .groups]
 
-def get_polished_bin_outputs(wildcards, templates=POLISHED_TEMPLATE_LIST):
+def get_polished_bin_outputs(wildcards, \
+                             templates=POLISHED_TEMPLATE_TARGET_LIST):
+    """ Take targets defined in Snakefile as templates on bin_clust_id
+    and return list of final target files using list of bin_clust_ids
+    """
     bin_output_list = []
     final_bin_list = get_bin_clusters(wildcards)
     for filename_template in templates:
