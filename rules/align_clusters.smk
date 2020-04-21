@@ -53,19 +53,29 @@ checkpoint create_bin_cluster_read_lists:
         # parse table; filter by cluster
         for clust_info_file in input.clust_info:
             bin_id = os.path.basename(os.path.dirname(clust_info_file))
+            print(f"DEBUG: bin id: {bin_id}")
             df = pd.read_csv(clust_info_file)
-            for clust_id, df_clust in df.groupby('clust_id'):
-                readlist = BIN_CLUSTER_READS_LIST.format(**locals())
+            for clust_id, df_clust in df.groupby('cluster'):
+                bin_clust_id = f"{bin_id}_{clust_id}"
+                bin_clust_dir = str(BIN_CLUSTER_DIR).format(bin_clust_id=bin_clust_id)
+                os.makedirs(bin_clust_dir, exist_ok=True)
+                readlist = str(BIN_CLUSTER_READS_LIST).format(bin_clust_id=bin_clust_id)
                 df_clust['read_id'].to_csv(readlist, index=False, header=False)
-                readinfo = BIN_CLUSTER_READS_INFO.format(**locals())
+                readinfo = str(BIN_CLUSTER_READS_INFO).format(bin_clust_id=bin_clust_id)
                 df_clust.to_csv(readinfo, index=False)
 
 def expand_template_from_bin_clusters(wildcards, template):
     """ looks for "{bin_id}_{vlust_id}" folders in BIN_CLUSTER_ROOT """
     # get dir through checkpoints to throw Exception if checkpoint is pending
-    checkpoint_dir = checkpoints.create_bin_cluster_read_lists.get(**wildcards).output
-    # get bin_bin_clusters from files
-    bin_clusters, _bcs = glob_wildcards(BIN_CLUSTER_DIR)
+    checkpoint_dir = checkpoints.create_bin_cluster_read_lists.get(**wildcards).output[0]
+    # get bin_bin_clusters from files 
+    #bin_clusters, = glob_wildcards(BIN_CLUSTER_READS_LIST)
+    # use chkpt dir instead of template because somethings not working
+    bin_clusters, = glob_wildcards(os.path.join(checkpoint_dir, \
+                                                "{bin_clust_id}", \
+                                                "readlist.csv"))
+
+    print(f"DEBUG: clusters: {repr(bin_clusters)}")
     # expand template
     return expand(str(template), bin_clust_id=bin_clusters)
 

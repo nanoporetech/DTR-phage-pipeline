@@ -10,7 +10,6 @@ rule summary_stats:
     run:
         import matplotlib; matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
         df = pd.read_csv(input.all_summary, quoting=3, sep='\t')
         
         # Sometimes these summary files have quotation marks around each row entry

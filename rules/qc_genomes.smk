@@ -39,7 +39,10 @@ rule aggregate_prodigal_statistics:
         table=temp(ALL_POL_CDS_SUMMARY),
     conda: '../envs/clustering.yml'
     shell:
-        'python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {input}'
+           """python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} \
+             {MEDAKA_DIR}/*/*.ref_read.medaka.prodigal.cds.stats.txt """
+
+old_shell = """python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {input}"""
 
 rule build_bin_cluster_summary_table:
     input:
@@ -75,20 +78,19 @@ rule combine_bin_cluster_strand_counts_into_table:
         annot_df  = pd.concat(annot_dfs)
         annot_df.to_csv(output.annots, sep='\t', index=False)
 
-def expand_dtr_align_tsv(wildcards):
-    return expand_template_from_bin_clusters(wildcards, DTR_ALIGN_TSV)
-
 rule combine_dtr_aligns:
-    input: expand_dtr_align_tsv
+    input: lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_TSV)
     output:
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
         fns = list(str(i) for i in input)
+        print("DEBUG: Loading dtr alignment infos from " + repr(fns))
+        fns = expand_template_from_bin_clusters({}, DTR_ALIGN_TSV)
+        print("DEBUG: Loading dtr alignment infos from " + repr(fns))
         df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
-        print("DEBUG: Loaded dtr alignment infos from " + repr(fns))
         print(df.shape)
         print(df.head())
-        df['dtr_len'] = df['eend'] - df['tstart']
+        df['dtr_len'] = df['tend'] - df['tstart']
         df['left_dist'] = df['tend']
         df['right_dist'] = df['tlen'] - df['tstart']
         for_df = []

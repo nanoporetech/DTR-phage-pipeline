@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from glob import glob
 import pandas as pd
+import numpy as np
 
 configfile: 'config.yml'
 SCRIPT_DIR = srcdir('scripts')
@@ -119,7 +120,7 @@ ALN_CLUST_READS_COMBO    = ALN_CLUST_DIR / 'all_bins.clust.info.csv'
 BIN_CLUSTER_ROOT                = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
 BIN_CLUSTER_DIR                 = BIN_CLUSTER_ROOT / '{bin_clust_id}'
 BIN_CLUSTER_READS_INFO          = BIN_CLUSTER_DIR / '{bin_clust_id}.readinfo.csv'
-BIN_CLUSTER_READS_LIST          = BIN_CLUSTER_DIR / '{bin_clust_id}.readlist.csv'
+BIN_CLUSTER_READS_LIST          = BIN_CLUSTER_DIR / 'readlist.csv'
 BIN_CLUSTER_READS_FASTA         = BIN_CLUSTER_DIR / '{bin_clust_id}.reads.fasta'
 BIN_CLUSTER_REF_READ_LIST       = BIN_CLUSTER_DIR / '{bin_clust_id}.ref_readlist.csv'
 BIN_CLUSTER_POL_READS_LIST      = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_readlist.csv'

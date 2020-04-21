@@ -178,7 +178,7 @@ def expand_template_from_bins(wildcards, template):
     # get dir through checkpoints to throw Exception if checkpoint is pending
     checkpoint_dir = checkpoints.generate_bins_and_stats.get(**wildcards).output
     # get bins from files
-    bins, _bins = glob_wildcards(BIN_READLIST)
+    bins, = glob_wildcards(BIN_READLIST)
     # skips from config
     bins = [b for b in bins if b not in SKIP_BINS]
     # expand template
