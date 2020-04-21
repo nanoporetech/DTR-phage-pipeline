@@ -3,6 +3,7 @@ import os
 from glob import glob
 import pandas as pd
 import numpy as np
+from snakemake.logging import logger
 
 configfile: 'config.yml'
 SCRIPT_DIR = srcdir('scripts')

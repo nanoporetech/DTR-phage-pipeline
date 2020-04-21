@@ -84,9 +84,9 @@ rule combine_dtr_aligns:
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
         fns = list(str(i) for i in input)
-        print("DEBUG: Loading dtr alignment infos from " + repr(fns))
+        logger.debug("DEBUG: Loading dtr alignment infos from " + repr(fns))
         fns = expand_template_from_bin_clusters({}, DTR_ALIGN_TSV)
-        print("DEBUG: Loading dtr alignment infos from " + repr(fns))
+        logger.debug("DEBUG: Loading dtr alignment infos from " + repr(fns))
         df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
         print(df.shape)
         print(df.head())

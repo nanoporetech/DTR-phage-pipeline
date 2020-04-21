@@ -21,7 +21,7 @@ def parse_args():
     return args
 
 def main(args):
-    print("DEBUG: cds inputs: " + repr(args.fns))
+    #print("DEBUG: cds inputs: " + repr(args.fns))
     df = pd.concat([pd.read_csv(fn, sep="\t").set_index("clust_id") \
                     for fn in args.fns], axis=0)
 

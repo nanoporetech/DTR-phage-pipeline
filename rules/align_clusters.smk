@@ -53,7 +53,7 @@ checkpoint create_bin_cluster_read_lists:
         # parse table; filter by cluster
         for clust_info_file in input.clust_info:
             bin_id = os.path.basename(os.path.dirname(clust_info_file))
-            print(f"DEBUG: bin id: {bin_id}")
+            logger.debug(f"DEBUG: bin id: {bin_id}")
             df = pd.read_csv(clust_info_file)
             for clust_id, df_clust in df.groupby('cluster'):
                 bin_clust_id = f"{bin_id}_{clust_id}"
@@ -75,7 +75,7 @@ def expand_template_from_bin_clusters(wildcards, template):
                                                 "{bin_clust_id}", \
                                                 "readlist.csv"))
 
-    print(f"DEBUG: clusters: {repr(bin_clusters)}")
+    logger.debug(f"DEBUG: clusters: {repr(bin_clusters)}")
     # expand template
     return expand(str(template), bin_clust_id=bin_clusters)
 
