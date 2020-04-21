@@ -94,10 +94,11 @@ KMER_FREQS_UMAP_BINS_COORDS       = KMER_BIN_ROOT / 'kmer_comp.umap.bins.tsv'
 ###################################
 # BIN ANALYSIS FILES              #
 ###################################
-BINS_DIR                    = KMER_BIN_ROOT / 'bins'
-BIN_READLIST                = BINS_DIR / '{bin_id}' / 'read_list.txt'
-BIN_FASTA                   = BINS_DIR / '{bin_id}' / '{bin_id}.reads.fa'
-BIN_GENOME_SIZE             = BINS_DIR / '{bin_id}' / 'genome_size.txt'
+BINS_ROOT                   = KMER_BIN_ROOT / 'bins'
+BIN_DIR                     = BINS_ROOT / '{bin_id}'
+BIN_READLIST                = BIN_DIR / 'read_list.txt'
+BIN_FASTA                   = BIN_DIR / '{bin_id}.reads.fa'
+BIN_GENOME_SIZE             = BIN_DIR / 'genome_size.txt'
 SKIP_BINS                   = config['SKIP_BINS'][SAMPLE][STYPE][VERSION]
 BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "refine_bins"
 
@@ -115,15 +116,16 @@ ALN_CLUST_READS_COMBO    = ALN_CLUST_DIR / 'all_bins.clust.info.csv'
 ###################################
 # Separate cluster-specific reads #
 ###################################
-BIN_CLUSTER_DIR                 = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
-BIN_CLUSTER_READS_INFO          = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readinfo.csv'
-BIN_CLUSTER_READS_LIST          = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readlist.csv'
-BIN_CLUSTER_READS_FASTA         = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.reads.fasta'
-BIN_CLUSTER_REF_READ_LIST       = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_readlist.csv'
-BIN_CLUSTER_POL_READS_LIST      = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_readlist.csv'
-BIN_CLUSTER_REF_READ_FASTA      = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.fa'
-BIN_CLUSTER_POL_READS_FASTQ     = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_reads.fq'
-BIN_CLUSTER_POL_READS_FASTA     = BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_reads.fa'
+BIN_CLUSTER_ROOT                = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
+BIN_CLUSTER_DIR                 = BIN_CLUSTER_ROOT / '{bin_clust_id}'
+BIN_CLUSTER_READS_INFO          = BIN_CLUSTER_DIR / '{bin_clust_id}.readinfo.csv'
+BIN_CLUSTER_READS_LIST          = BIN_CLUSTER_DIR / '{bin_clust_id}.readlist.csv'
+BIN_CLUSTER_READS_FASTA         = BIN_CLUSTER_DIR / '{bin_clust_id}.reads.fasta'
+BIN_CLUSTER_REF_READ_LIST       = BIN_CLUSTER_DIR / '{bin_clust_id}.ref_readlist.csv'
+BIN_CLUSTER_POL_READS_LIST      = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_readlist.csv'
+BIN_CLUSTER_REF_READ_FASTA      = BIN_CLUSTER_DIR / '{bin_clust_id}.ref_read.fa'
+BIN_CLUSTER_POL_READS_FASTQ     = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_reads.fq'
+BIN_CLUSTER_POL_READS_FASTA     = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_reads.fa'
 
 
 ####################################
@@ -154,17 +156,6 @@ DTR_ALIGN_PREFIX                 = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clu
 DTR_ALIGN_COORD_PLOT             = '{}.dtr.aligns.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_TSV                    = '{}.dtr.aligns.tsv'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'polished.cyclic_permut.stats.tsv')
-
-# List of templates to exapand for final targets
-POLISHED_TEMPLATE_TARGET_LIST = [ \
-    BIN_CLUSTER_REF_READ_FASTA, \
-    BIN_CLUSTER_POL_READS_FASTA, \
-    DTR_ALIGN_COORD_PLOT, \
-    BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT, \
-    BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS, \
-    BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS, \
-    BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS, \
-]
 
 ######################################
 # Combine Medaka polished references #
@@ -237,11 +228,19 @@ rule all:
         KAIJU_RESULTS_KRONA_HTML,
         expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
         KMER_BIN_STATS,
-        lambda w: expand(str(ALN_CLUST_OUTPUT_HEATMAP), \
-                         bin_id=get_kmer_bins_good(w)),
+        lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
         ALN_CLUST_READS_COMBO,
-        get_polished_bin_outputs,  # expands all of POLISHED_TEMPLATE_TARGET_LIST
-                                   # (see rules/align_clusters.smk)
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_REF_READ_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POL_READS_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_COORD_PLOT),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
         ALL_POL_CDS_PLOT_UNIQ_ALL,
         ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
         ALL_POL,
@@ -265,21 +264,29 @@ rule all_kaiju:
 
 rule all_populate_kmer_bins:
     input:
-        bin_reads=lambda w: expand(str(BIN_READLIST), bin_id=get_kmer_bins_all(w)),
-        bin_fasta=lambda w: expand(str(BIN_FASTA), bin_id=get_kmer_bins_all(w)),
+        bin_reads=lambda w: expand_template_from_bins(w, BIN_READLIST),
+        bin_fasta=lambda w: expand_teamplte_from_bins(w, BIN_FASTA),
 
 rule all_alignment_clusters:
     input:
         stats=KMER_BIN_STATS,
-        heatmaps=lambda w: expand(str(ALN_CLUST_OUTPUT_HEATMAP), \
-                                  bin_id=get_kmer_bins_good(w)),
-        align=lambda w: expand(str(ALN_CLUST_OUTPUT_INFO), \
-                               bin_id=get_kmer_bins_good(w)),
+        heatmaps=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+        align=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_INFO),
 
 rule all_polish_and_annotate:
     input:
         ALN_CLUST_READS_COMBO,
-        get_polished_bin_outputs,  # expands all of POLISHED_TEMPALTE_LIST
+        lambda w: expand_template_from_bins(w, BIN_CLUSTER_REF_READ_FASTA),
+        lambda w: expand_template_from_bins(w, BIN_CLUSTER_POL_READS_FASTA),
+        lambda w: expand_template_from_bins(w, DTR_ALIGN_COORD_PLOT),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
 
 rule all_combine_dedup_summarize:
     input:

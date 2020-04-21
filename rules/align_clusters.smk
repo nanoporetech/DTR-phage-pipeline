@@ -26,10 +26,10 @@ rule bin_ava_clustering:
         'python {SCRIPT_DIR}/cluster_ava_alignments.py -p {params.prefix} '
         ' -s {params.min_score_frac} -n {params.min_reads} {input}'
 
-checkpoint combine_bin_cluster_read_info:
+rule combine_bin_cluster_read_info:
     input:
-        clust_info_csvs=lambda w: expand(str(ALN_CLUST_OUTPUT_INFO), \
-                                         bin_id=get_kmer_bins_good(w)),
+        clust_info_csvs=lambda w: expand_template_from_bins(w, \
+                                                            ALN_CLUST_OUTPUT_INFO),
     output: 
         combined=ALN_CLUST_READS_COMBO
     run:
@@ -43,42 +43,31 @@ checkpoint combine_bin_cluster_read_info:
 # Separate out read ID's from each cluster #
 ############################################
 
-def get_bin_clusters(wildcards):
-    """ Use combo output from the checkpoint to get list of bin_clust_ids """
-    chkpt = checkpoints.combine_bin_cluster_read_info
-    with chkpt.get().output.combined.open() as table:
-        return [f"{b}_{c}" \
-                for b,c in pd.read_csv(table) \
-                             .groupby(['bin_id', 'cluster']) \
-                             .groups]
-
-def get_polished_bin_outputs(wildcards, \
-                             templates=POLISHED_TEMPLATE_TARGET_LIST):
-    """ Take targets defined in Snakefile as templates on bin_clust_id
-    and return list of final target files using list of bin_clust_ids
-    """
-    bin_output_list = []
-    final_bin_list = get_bin_clusters(wildcards)
-    for filename_template in templates:
-        bin_output_list.extend(expand(str(filename_template),
-                                      bin_clust_id=final_bin_list))
-    return bin_output_list
-
-rule create_bin_cluster_read_lists:
-    """ split bin cluster info by clusters """
+checkpoint create_bin_cluster_read_lists:
+    """ split all bins into clusters """
     input: 
-        # get bin_id form bin_clust_id
-        clust_info=lambda w: str(ALN_CLUST_OUTPUT_INFO).format(
-                                    bin_id=w.bin_clust_id.split("_")[0])
+        clust_info=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_INFO)
     output: 
-        readlist=BIN_CLUSTER_READS_LIST,
-        readinfo=BIN_CLUSTER_READS_INFO,
+        directory(BIN_CLUSTER_ROOT)
     run: 
         # parse table; filter by cluster
-        bin_id, clust_id = wildcards.bin_clust_id.split("_")
-        df_clust = pd.read_csv(input.clust_info).query('cluster == @clust_id')
-        df_clust['read_id'].to_csv(output.readlist, index=False, header=False)
-        df_clust.to_csv(output.readinfo, index=False)
+        for clust_info_file in input.clust_info:
+            bin_id = os.path.basename(os.path.dirname(clust_info_file))
+            df = pd.read_csv(clust_info_file)
+            for clust_id, df_clust in df.groupby('clust_id'):
+                readlist = BIN_CLUSTER_READS_LIST.format(**locals())
+                df_clust['read_id'].to_csv(readlist, index=False, header=False)
+                readinfo = BIN_CLUSTER_READS_INFO.format(**locals())
+                df_clust.to_csv(readinfo, index=False)
+
+def expand_template_from_bin_clusters(wildcards, template):
+    """ looks for "{bin_id}_{vlust_id}" folders in BIN_CLUSTER_ROOT """
+    # get dir through checkpoints to throw Exception if checkpoint is pending
+    checkpoint_dir = checkpoints.create_bin_cluster_read_lists.get(**wildcards).output
+    # get bin_bin_clusters from files
+    bin_clusters, _bcs = glob_wildcards(BIN_CLUSTER_DIR)
+    # expand template
+    return expand(str(template), bin_clust_id=bin_clusters)
 
 rule get_cluster_reads_fasta:
     input: 

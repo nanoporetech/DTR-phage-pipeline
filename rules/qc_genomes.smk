@@ -3,11 +3,10 @@
 ############################
 
 rule combine_all_polished_ref_reads:
-    input: lambda w: expand(BIN_CLUSTER_POLISHED_REF, \
-                            bin_clust_id=get_bin_clusters(w))
+    input: lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POLISHED_REF),
     output: temp(ALL_POL_UNTRIMMED)
     shell:
-        'cat {input.dirname}/*/*.medaka.fasta > {output}'
+        'cat {input} > {output}'
 
 rule remove_adapters_from_ref_reads:
     input: ALL_POL_UNTRIMMED
@@ -34,8 +33,8 @@ rule find_all_DTR_genomes:
         '-p {params.prefix} -o {params.ovlp} -c {params.chunksize} {input}'
 
 rule aggregate_prodigal_statistics:
-    input: lambda w: expand(BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS, \
-                            bin_clust_id=get_bin_clusters(w))
+    input: lambda w: expand_template_from_bin_clusters(w, \
+                        BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
     output:
         table=temp(ALL_POL_CDS_SUMMARY),
     conda: '../envs/clustering.yml'
@@ -45,23 +44,23 @@ rule aggregate_prodigal_statistics:
 rule build_bin_cluster_summary_table:
     input:
         dtr_table=ALL_POL_DTR_STATS,
-        cds_table=ALL_POL_CDS_SUMMARY
+        cds_table=ALL_POL_CDS_SUMMARY,
+        bins_dir=BINS_ROOT,
     output: temp(ALL_POL_DTR_GC_STATS)
     params:
-        bins_dir=BINS_DIR,
-        clust_dir=BIN_CLUSTER_DIR,
+        clust_dir=BIN_CLUSTER_ROOT,
         prefix='{}{}'.format(SAMPLE,STYPE)
     conda: '../envs/python.yml'
     shell:
         'python {SCRIPT_DIR}/calculate_genomes_gc_contents.py -p {params.prefix} '
-        '-o {output} {input.dtr_table} {input.cds_table} {params.bins_dir} {params.clust_dir}'
+        '-o {output} {input.dtr_table} {input.cds_table} {input.bins_dir} {params.clust_dir}'
 
 rule combine_bin_cluster_strand_counts_into_table:
-    input: 
-        counts=lambda w: expand(BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS, \
-                                bin_clust_id=get_bin_clusters(w)),
-        annots=lambda w: expand(BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS, \
-                                bin_clust_id=get_bin_clusters(w)), 
+    input:
+        counts=lambda w: expand_template_from_bin_clusters(w, \
+                                    BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        annots=lambda w: expand_template_from_bin_clusters(w, \
+                                    BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
     output:
         counts=temp(ALL_POL_STRANDS),
         annots=temp(ALL_POL_STRAND_ANNOTS)
@@ -76,13 +75,20 @@ rule combine_bin_cluster_strand_counts_into_table:
         annot_df  = pd.concat(annot_dfs)
         annot_df.to_csv(output.annots, sep='\t', index=False)
 
+def expand_dtr_align_tsv(wildcards):
+    return expand_template_from_bin_clusters(wildcards, DTR_ALIGN_TSV)
+
 rule combine_dtr_aligns:
-    input: lambda w: expand(DTR_ALIGN_TSV, bin_clust_ids=get_bin_clusters(w))
-    output: 
+    input: expand_dtr_align_tsv
+    output:
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
-        df = pd.concat([pd.read_csv(fn, sep='\t') for fn in input])
-        df['dtr_len'] = df['tend'] - df['tstart']
+        fns = list(str(i) for i in input)
+        df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
+        print("DEBUG: Loaded dtr alignment infos from " + repr(fns))
+        print(df.shape)
+        print(df.head())
+        df['dtr_len'] = df['eend'] - df['tstart']
         df['left_dist'] = df['tend']
         df['right_dist'] = df['tlen'] - df['tstart']
         for_df = []
