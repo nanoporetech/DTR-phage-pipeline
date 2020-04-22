@@ -42,8 +42,6 @@ rule plot_all_prodigal_stats:
     output:
         plot1=ALL_POL_CDS_PLOT_UNIQ_ALL,
         plot2=ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
-    params:
-        pol_dir=MEDAKA_DIR
     conda: '../envs/clustering.yml'
     shell:
         'python {SCRIPT_DIR}/plot_cds_summaries.py --output1={output.plot1} '

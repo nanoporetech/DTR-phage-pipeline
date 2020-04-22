@@ -3,11 +3,10 @@
 ############################
 
 rule combine_all_polished_ref_reads:
-    input: 
-        dirname=MEDAKA_DIR,
+    input: lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POLISHED_REF),
     output: temp(ALL_POL_UNTRIMMED)
     shell:
-        'cat {input.dirname}/*/*.medaka.fasta > {output}'
+        'cat {input} > {output}'
 
 rule remove_adapters_from_ref_reads:
     input: ALL_POL_UNTRIMMED
@@ -34,61 +33,63 @@ rule find_all_DTR_genomes:
         '-p {params.prefix} -o {params.ovlp} -c {params.chunksize} {input}'
 
 rule aggregate_prodigal_statistics:
+    input: lambda w: expand_template_from_bin_clusters(w, \
+                        BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
     output:
         table=temp(ALL_POL_CDS_SUMMARY),
-    params:
-        pol_dir=MEDAKA_DIR
     conda: '../envs/clustering.yml'
     shell:
-        'python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {params.pol_dir}'
+           """python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} \
+             {MEDAKA_DIR}/*/*.ref_read.medaka.prodigal.cds.stats.txt """
+
+old_shell = """python {SCRIPT_DIR}/combine_cds_summary.py -o {output.table} {input}"""
 
 rule build_bin_cluster_summary_table:
     input:
         dtr_table=ALL_POL_DTR_STATS,
-        cds_table=ALL_POL_CDS_SUMMARY
+        cds_table=ALL_POL_CDS_SUMMARY,
+        bins_dir=BINS_ROOT,
     output: temp(ALL_POL_DTR_GC_STATS)
     params:
-        bins_dir=BINS_DIR,
-        clust_dir=BIN_CLUSTER_DIR,
+        clust_dir=BIN_CLUSTER_ROOT,
         prefix='{}{}'.format(SAMPLE,STYPE)
     conda: '../envs/python.yml'
     shell:
         'python {SCRIPT_DIR}/calculate_genomes_gc_contents.py -p {params.prefix} '
-        '-o {output} {input.dtr_table} {input.cds_table} {params.bins_dir} {params.clust_dir}'
+        '-o {output} {input.dtr_table} {input.cds_table} {input.bins_dir} {params.clust_dir}'
 
 rule combine_bin_cluster_strand_counts_into_table:
-    input: 
-        pol_dir=MEDAKA_DIR
+    input:
+        counts=lambda w: expand_template_from_bin_clusters(w, \
+                                    BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        annots=lambda w: expand_template_from_bin_clusters(w, \
+                                    BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
     output:
         counts=temp(ALL_POL_STRANDS),
         annots=temp(ALL_POL_STRAND_ANNOTS)
     run:
-        import os
-        import pandas as pd
-        from glob import glob
-        count_fns = glob(os.path.join(input.pol_dir, '*', '*.ref_read.strands.summary.tsv'))
-        count_dfs = [pd.read_csv(fn, sep='\t') for fn in count_fns]
+        count_dfs = [pd.read_csv(fn, sep='\t') for fn in input.counts]
         count_df  = pd.concat(count_dfs)
         count_df['bin']     = count_df['clust_id'].map(lambda x: int(x.split('_')[0]))
         count_df['cluster'] = count_df['clust_id'].map(lambda x: int(x.split('_')[1]))
         count_df            = count_df.sort_values(['bin','cluster']).drop(['bin','cluster'], axis=1).round({'frac_pos': 2, 'frac_neg': 2})
         count_df.to_csv(output.counts, sep='\t', index=False)
-        annot_fns = glob(os.path.join(input.pol_dir, '*', '*.ref_read.strands.reads.tsv'))
-        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in annot_fns]
+        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in input.annots]
         annot_df  = pd.concat(annot_dfs)
         annot_df.to_csv(output.annots, sep='\t', index=False)
 
 rule combine_dtr_aligns:
-    input:
-        medaka_dir = MEDAKA_DIR
-    output: 
+    input: lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_TSV)
+    output:
         cyc_perm_stats = temp(DTR_ALIGN_CYC_PERM_TSV)
     run:
-        import os
-        import pandas as pd
-        from glob import glob
-        fns = glob(os.path.join(input.medaka_dir, '*', '*.dtr.aligns.tsv'))
+        fns = list(str(i) for i in input)
+        logger.debug("DEBUG: Loading dtr alignment infos from " + repr(fns))
+        fns = expand_template_from_bin_clusters({}, DTR_ALIGN_TSV)
+        logger.debug("DEBUG: Loading dtr alignment infos from " + repr(fns))
         df = pd.concat([pd.read_csv(fn, sep='\t') for fn in fns])
+        print(df.shape)
+        print(df.head())
         df['dtr_len'] = df['tend'] - df['tstart']
         df['left_dist'] = df['tend']
         df['right_dist'] = df['tlen'] - df['tstart']
@@ -113,7 +114,6 @@ rule combine_all_draft_stats:
         cyc_perm_stats = DTR_ALIGN_CYC_PERM_TSV
     output: ALL_POL_STATS
     run:
-        import pandas as pd
         df_gc     = pd.read_csv(input.dtr_gc_stats, sep='\t').set_index('clust_id')
         df_cds    = pd.read_csv(input.cds_stats, sep='\t').set_index('clust_id')
         df_strand = pd.read_csv(input.strand_stats, sep='\t').set_index('clust_id')

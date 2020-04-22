@@ -3,10 +3,9 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python == 3.7
-  - snakemake < 5.4.0
+  - python >= 3.7
+  - snakemake >= 5.14.0
   - matplotlib
   - click
   - pandas
   - requests
-  - minimap2==2.17

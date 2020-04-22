@@ -10,7 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # Positional mandatory arguments
-    parser.add_argument('pol_dir', help='Path to directory containing the polished genomes and annotated CDS info for each alignment cluster', type=str)
+    parser.add_argument('fns', nargs="+",  help='CDS stats files, one for each bin_cluster', type=str)
 
     # Optional arguments
     parser.add_argument('-o', '--output', help='Output file containing combined CDS statistics [cds.stats.combined.tsv]', type=str, default='cds.stats.combined.tsv')
@@ -21,9 +21,9 @@ def parse_args():
     return args
 
 def main(args):
-    fns = glob(os.path.join(args.pol_dir, "*", "*.cds.stats.txt"))
-
-    df = pd.concat([pd.read_csv(fn, sep="\t").set_index("clust_id") for fn in fns], axis=0)
+    #print("DEBUG: cds inputs: " + repr(args.fns))
+    df = pd.concat([pd.read_csv(fn, sep="\t").set_index("clust_id") \
+                    for fn in args.fns], axis=0)
 
     df.reset_index().to_csv(args.output, sep="\t", index=False)
 

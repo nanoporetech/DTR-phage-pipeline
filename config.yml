@@ -16,6 +16,7 @@ input_summary: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pip
 output_root: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/analysis/
 
 max_threads: 32 # Maximum number of threads the pipeline will attempt to use
+pre_filter: DTR # Only process reads with DTR (None: all reads, Virsorter: virsorter)
 
 # Medaka model depends on whether MinION or PromethION used for sequencing and which Guppy version
 # was used for basecalling. Please see Medaka documentation for list of available models.
@@ -43,6 +44,14 @@ SKIP_BINS:
 DTR_FIND:
     ovlp: 20 # Percent of read start/end to check for alignment
     chunksize: 5000
+
+VIRSORTER:
+    db: 1             # Either "1" (DEFAULT Refseqdb) or "2" (Viromedb)
+    diamond: True     # False: blastp, True: diamond
+    virome: False     # True: input is a virome, don't train on data
+    prophage: False   # False: only use phage, True: use prohpage, too
+    data_dir: '/mnt/arginine/galaxydata/seqdbs/virsorter-data'
+                      # location of virsorter-data
 
 KMER_CALC:
     k: 5      # k-mer size to use for k-mer binning

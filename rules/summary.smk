@@ -4,14 +4,12 @@
 
 rule summary_stats:
     input: 
-        all_summary = READS_IMPORT_SUMMARY
+        all_summary=READS_IMPORT_SUMMARY
     output:
         plot=SUMMARY_PLOT,
     run:
-        import pandas as pd
         import matplotlib; matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
         df = pd.read_csv(input.all_summary, quoting=3, sep='\t')
         
         # Sometimes these summary files have quotation marks around each row entry

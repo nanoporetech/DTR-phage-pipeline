@@ -3,7 +3,7 @@
 ####################################################################################
 
 rule kaiju:
-    input: DTR_READS_FASTA
+    input: FILTERED_FASTA
     output: KAIJU_RESULTS
     conda: '../envs/kaiju.yml'
     threads: config['max_threads']

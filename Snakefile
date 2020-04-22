@@ -1,6 +1,9 @@
 from pathlib import Path
 import os
 from glob import glob
+import pandas as pd
+import numpy as np
+from snakemake.logging import logger
 
 configfile: 'config.yml'
 SCRIPT_DIR = srcdir('scripts')
@@ -34,7 +37,7 @@ READS_IMPORT_SUMMARY    = config['input_summary']
 # SUMMARY STATS FILES             #
 ###################################
 READS_DIR      = OUTPUT_ROOT / SAMPLE / STYPE / VERSION / 'reads_summary'
-SUMMARY_PLOT   = str(READS_DIR / 'reads.summary.stats.png')
+SUMMARY_PLOT   = READS_DIR / 'reads.summary.stats.png'
 
 
 ###################################
@@ -47,72 +50,84 @@ DTR_READS_FASTA              = '{}.dtr.fasta'.format(str(DTR_READS_PREFIX))
 DTR_READS_STATS              = '{}.dtr.stats.tsv'.format(str(DTR_READS_PREFIX))
 DTR_READS_HIST               = '{}.dtr.hist.png'.format(str(DTR_READS_PREFIX))
 
+###################################
+# VIRSORTER FILES                 #
+###################################
+VIRSORTER_DIR            = OUTPUT_ROOT / SAMPLE / STYPE / VERSION / 'virsorter'
+VIRSORTER_FASTA          = VIRSORTER_DIR / 'all_phage.fasta'
+
+pre_filter = config.get('pre_filter', 'DTR').upper()
+FILTERED_FASTA = VIRSORTER_FASTA if pre_filter == "VIRSORTER" \
+                                 else DTR_READS_FASTA if pre_filter == "DTR" \
+                                 else READS_IMPORT_FASTA
+
 
 ###################################
 # KAIJU CLASSIFICATION            #
 ###################################
 KAIJU_DIR                 = OUTPUT_ROOT /  SAMPLE / STYPE / VERSION / 'kaiju'
-KAIJU_RESULTS             = str(KAIJU_DIR / 'results.tsv')
-KAIJU_RESULTS_TAXA        = str(KAIJU_DIR / 'results.taxa.tsv')
-KAIJU_RESULTS_KRONA       = str(KAIJU_DIR / 'results.krona')
-KAIJU_RESULTS_KRONA_HTML  = str(KAIJU_DIR / 'results.html')
-KAIJU_TAXIDS              = str(KAIJU_DIR / 'taxids.csv')
-KAIJU_TAXINFO             = str(KAIJU_DIR / 'taxinfo.csv')
-KAIJU_TAX_GENOMESIZE_EST  = str(KAIJU_DIR / 'taxid_genomesize_estimates.csv')
+KAIJU_RESULTS             = KAIJU_DIR / 'results.tsv'
+KAIJU_RESULTS_TAXA        = KAIJU_DIR / 'results.taxa.tsv'
+KAIJU_RESULTS_KRONA       = KAIJU_DIR / 'results.krona'
+KAIJU_RESULTS_KRONA_HTML  = KAIJU_DIR / 'results.html'
+KAIJU_TAXIDS              = KAIJU_DIR / 'taxids.csv'
+KAIJU_TAXINFO             = KAIJU_DIR / 'taxinfo.csv'
+KAIJU_TAX_GENOMESIZE_EST  = KAIJU_DIR / 'taxid_genomesize_estimates.csv'
 
 
 ###################################
 # K-mer UAMP files and plots      #
 ###################################
 KMER_BIN_ROOT                     = OUTPUT_ROOT /  SAMPLE / STYPE / VERSION / 'kmer_binning'
-KMER_BINS_MEMBERSHIP              = str(KMER_BIN_ROOT / 'bin_membership.tsv')
-KMER_BIN_STATS                    = str(KMER_BIN_ROOT / 'bin_stats.csv')
-KMER_FREQS_TMP                    = str(KMER_BIN_ROOT / 'kmer_comp.tmp')
-KMER_FREQS                        = str(KMER_BIN_ROOT / 'kmer_comp.tsv')
-KMER_FREQS_UMAP                   = str(KMER_BIN_ROOT / 'kmer_comp.umap.tsv')
-KMER_FREQS_UMAP_TAX               = str(KMER_BIN_ROOT / ('kmer_comp.umap.{database}.{rank}.png'))
-KMER_FREQS_UMAP_QSCORE            = str(KMER_BIN_ROOT / 'kmer_comp.umap.qscore.png')
-KMER_FREQS_UMAP_GC                = str(KMER_BIN_ROOT / 'kmer_comp.umap.gc.png')
-KMER_FREQS_UMAP_READLENGTH        = str(KMER_BIN_ROOT / 'kmer_comp.umap.readlength.png')
-KMER_FREQS_UMAP_BINS_PLOT         = str(KMER_BIN_ROOT / 'kmer_comp.umap.bins.png')
-KMER_FREQS_UMAP_BINS_COORDS       = str(KMER_BIN_ROOT / 'kmer_comp.umap.bins.tsv')
+KMER_BINS_MEMBERSHIP              = KMER_BIN_ROOT / 'bin_membership.tsv'
+KMER_BINS_LIST                    = KMER_BIN_ROOT / 'bin_list.txt'
+KMER_BIN_STATS                    = KMER_BIN_ROOT / 'bin_stats.csv'
+KMER_FREQS_TMP                    = KMER_BIN_ROOT / 'kmer_comp.tmp'
+KMER_FREQS                        = KMER_BIN_ROOT / 'kmer_comp.tsv'
+KMER_FREQS_UMAP                   = KMER_BIN_ROOT / 'kmer_comp.umap.tsv'
+KMER_FREQS_UMAP_TAX               = KMER_BIN_ROOT / 'kmer_comp.umap.{database}.{rank}.png'
+KMER_FREQS_UMAP_QSCORE            = KMER_BIN_ROOT / 'kmer_comp.umap.qscore.png'
+KMER_FREQS_UMAP_GC                = KMER_BIN_ROOT / 'kmer_comp.umap.gc.png'
+KMER_FREQS_UMAP_READLENGTH        = KMER_BIN_ROOT / 'kmer_comp.umap.readlength.png'
+KMER_FREQS_UMAP_BINS_PLOT         = KMER_BIN_ROOT / 'kmer_comp.umap.bins.png'
+KMER_FREQS_UMAP_BINS_COORDS       = KMER_BIN_ROOT / 'kmer_comp.umap.bins.tsv'
 
 
 ###################################
 # BIN ANALYSIS FILES              #
 ###################################
-BINS_DIR                    = KMER_BIN_ROOT / 'bins'
-BIN_READLIST                = str(BINS_DIR / '{bin_id}' / 'read_list.txt')
-BIN_FASTA                   = str(BINS_DIR / '{bin_id}' / '{bin_id}.reads.fa')
-BIN_GENOME_SIZE             = str(BINS_DIR / '{bin_id}' / 'genome_size.txt')
-ALL_BIN_IDS                 = list(map(lambda x: x.split('/')[-1], glob(str(BINS_DIR)+'/*')))
+BINS_ROOT                   = KMER_BIN_ROOT / 'bins'
+BIN_DIR                     = BINS_ROOT / '{bin_id}'
+BIN_READLIST                = BIN_DIR / 'read_list.txt'
+BIN_FASTA                   = BIN_DIR / '{bin_id}.reads.fa'
+BIN_GENOME_SIZE             = BIN_DIR / 'genome_size.txt'
 SKIP_BINS                   = config['SKIP_BINS'][SAMPLE][STYPE][VERSION]
-BIN_IDS                     = [b for b in ALL_BIN_IDS if int(b) not in SKIP_BINS]
 BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "refine_bins"
 
 #####################################
 # Alignment clustering  FILES       #
 #####################################
 ALN_CLUST_DIR            = BINNED_ANALYSIS_ROOT / 'alignments'
-ALN_CLUST_PAF            = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.ava.paf')
-ALN_CLUST_OUTPUT_PREFIX  = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust')
-ALN_CLUST_OUTPUT_HEATMAP = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust.heatmap.png')
-ALN_CLUST_OUTPUT_INFO    = str(ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust.info.csv')
-ALN_CLUST_READS_COMBO    = str(ALN_CLUST_DIR / 'all_bins.clust.info.csv')
+ALN_CLUST_PAF            = ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.ava.paf'
+ALN_CLUST_OUTPUT_PREFIX  = ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust'
+ALN_CLUST_OUTPUT_HEATMAP = ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust.heatmap.png'
+ALN_CLUST_OUTPUT_INFO    = ALN_CLUST_DIR / '{bin_id}' / '{bin_id}.clust.info.csv'
+ALN_CLUST_READS_COMBO    = ALN_CLUST_DIR / 'all_bins.clust.info.csv'
 
 
 ###################################
 # Separate cluster-specific reads #
 ###################################
-BIN_CLUSTER_DIR                 = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
-BIN_CLUSTER_READS_INFO          = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readinfo.csv')
-BIN_CLUSTER_READS_LIST          = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.readlist.csv')
-BIN_CLUSTER_READS_FASTA         = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.reads.fasta')
-BIN_CLUSTER_REF_READ_LIST       = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_readlist.csv')
-BIN_CLUSTER_POL_READS_LIST      = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_readlist.csv')
-BIN_CLUSTER_REF_READ_FASTA      = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.fa')
-BIN_CLUSTER_POL_READS_FASTQ     = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_reads.fq')
-BIN_CLUSTER_POL_READS_FASTA     = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin_clust_id}.pol_reads.fa')
+BIN_CLUSTER_ROOT                = BINNED_ANALYSIS_ROOT / 'align_cluster_reads'
+BIN_CLUSTER_DIR                 = BIN_CLUSTER_ROOT / '{bin_clust_id}'
+BIN_CLUSTER_READS_INFO          = BIN_CLUSTER_DIR / '{bin_clust_id}.readinfo.csv'
+BIN_CLUSTER_READS_LIST          = BIN_CLUSTER_DIR / 'readlist.csv'
+BIN_CLUSTER_READS_FASTA         = BIN_CLUSTER_DIR / '{bin_clust_id}.reads.fasta'
+BIN_CLUSTER_REF_READ_LIST       = BIN_CLUSTER_DIR / '{bin_clust_id}.ref_readlist.csv'
+BIN_CLUSTER_POL_READS_LIST      = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_readlist.csv'
+BIN_CLUSTER_REF_READ_FASTA      = BIN_CLUSTER_DIR / '{bin_clust_id}.ref_read.fa'
+BIN_CLUSTER_POL_READS_FASTQ     = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_reads.fq'
+BIN_CLUSTER_POL_READS_FASTA     = BIN_CLUSTER_DIR / '{bin_clust_id}.pol_reads.fa'
 
 
 ####################################
@@ -120,22 +135,21 @@ BIN_CLUSTER_POL_READS_FASTA     = str(BIN_CLUSTER_DIR / '{bin_clust_id}' / '{bin
 ####################################
 POLISH_DIR                       = BINNED_ANALYSIS_ROOT / 'align_cluster_polishing'
 RACON_DIR                        = POLISH_DIR / 'racon'
-BIN_CLUSTER_RACON_POLISHED_FASTA = str(RACON_DIR / '{bin_clust_id}' / '{{bin_clust_id}}.ref_read.racon_{repeats}x.fasta'.format(repeats=RACON_ROUNDS))
+BIN_CLUSTER_RACON_POLISHED_FASTA = RACON_DIR / '{bin_clust_id}' / '{{bin_clust_id}}.ref_read.racon_{repeats}x.fasta'.format(repeats=RACON_ROUNDS)
 
 
 #####################################
 # Polish cluster reads using Medaka #
 #####################################
 MEDAKA_DIR                                    = POLISH_DIR / 'medaka'
-BIN_CLUSTER_POLISHED_REF_TMP                  = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.tmp.fasta')
-BIN_CLUSTER_POLISHED_REF                      = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.fasta')
-BIN_CLUSTER_POLISHED_POL_VS_REF_PAF           = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.paf')
-BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS       = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.summary.tsv')
-BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.reads.tsv')
-BIN_CLUSTER_POLISHED_REF_PRODIGAL             = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.fasta')
-BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT         = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.txt')
-BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS       = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.stats.txt')
-
+BIN_CLUSTER_POLISHED_REF_TMP                  = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.tmp.fasta'
+BIN_CLUSTER_POLISHED_REF                      = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.fasta'
+BIN_CLUSTER_POLISHED_POL_VS_REF_PAF           = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.paf'
+BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS       = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.summary.tsv'
+BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.strands.reads.tsv'
+BIN_CLUSTER_POLISHED_REF_PRODIGAL             = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.fasta'
+BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT         = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.txt'
+BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS       = MEDAKA_DIR / '{bin_clust_id}' / '{bin_clust_id}.ref_read.medaka.prodigal.cds.stats.txt'
 
 #########################################
 # Check for fixed or cyclic permutation #
@@ -144,7 +158,6 @@ DTR_ALIGN_PREFIX                 = str(MEDAKA_DIR / '{bin_clust_id}' / '{bin_clu
 DTR_ALIGN_COORD_PLOT             = '{}.dtr.aligns.png'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_TSV                    = '{}.dtr.aligns.tsv'.format(DTR_ALIGN_PREFIX)
 DTR_ALIGN_CYC_PERM_TSV           = str(POLISH_DIR / 'polished.cyclic_permut.stats.tsv')
-
 
 ######################################
 # Combine Medaka polished references #
@@ -184,6 +197,7 @@ wildcard_constraints:
 
 include: 'rules/summary.smk'
 include: 'rules/dtr_reads.smk'
+include: 'rules/virsorter.smk'
 include: 'rules/kaiju.smk'
 include: 'rules/kmer_bins.smk'
 include: 'rules/align_clusters.smk'
@@ -206,6 +220,37 @@ include: 'rules/linear_concats.smk'
 # 6. all_combine_dedup_summarize
 # 7. all_linear_concatemer_reads
 
+rule all:
+    input:
+        SUMMARY_PLOT,
+        KMER_FREQS_UMAP_QSCORE,
+        KMER_FREQS_UMAP_GC,
+        KMER_FREQS_UMAP_READLENGTH,
+        KMER_FREQS_UMAP_BINS_PLOT,
+        KAIJU_RESULTS_KRONA_HTML,
+        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+        KMER_BIN_STATS,
+        lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+        ALN_CLUST_READS_COMBO,
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_REF_READ_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POL_READS_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_COORD_PLOT),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+        ALL_POL_CDS_PLOT_UNIQ_ALL,
+        ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
+        ALL_POL,
+        ALL_POL_UNIQ,
+        ALL_POL_STATS
+
+## The orignal pieces
+
 rule all_kmer_count_and_bin:
     input:
         SUMMARY_PLOT,
@@ -217,35 +262,33 @@ rule all_kmer_count_and_bin:
 rule all_kaiju:
     input:
         KAIJU_RESULTS_KRONA_HTML,
-        expand(KMER_FREQS_UMAP_TAX, database=DATABASE_NAME, rank=TAX_RANK),
+        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
 
 rule all_populate_kmer_bins:
-    input: dynamic(BIN_READLIST),
-           dynamic(BIN_FASTA),
+    input:
+        bin_reads=lambda w: expand_template_from_bins(w, BIN_READLIST),
+        bin_fasta=lambda w: expand_teamplte_from_bins(w, BIN_FASTA),
 
 rule all_alignment_clusters:
     input:
-        KMER_BIN_STATS,
-        expand(ALN_CLUST_OUTPUT_HEATMAP, bin_id=BIN_IDS),
-        expand(ALN_CLUST_OUTPUT_INFO, bin_id=BIN_IDS),
+        stats=KMER_BIN_STATS,
+        heatmaps=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+        align=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_INFO),
 
 rule all_polish_and_annotate:
     input:
         ALN_CLUST_READS_COMBO,
-        dynamic(BIN_CLUSTER_READS_INFO),
-        dynamic(BIN_CLUSTER_READS_LIST),
-        dynamic(BIN_CLUSTER_REF_READ_LIST),
-        dynamic(BIN_CLUSTER_REF_READ_FASTA),
-        dynamic(BIN_CLUSTER_POL_READS_LIST),
-        dynamic(BIN_CLUSTER_POL_READS_FASTA),
-        dynamic(BIN_CLUSTER_RACON_POLISHED_FASTA),
-        dynamic(BIN_CLUSTER_POLISHED_REF),
-        dynamic(DTR_ALIGN_COORD_PLOT),
-        dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL),
-        dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
-        dynamic(BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
-        dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
-        dynamic(BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+        lambda w: expand_template_from_bins(w, BIN_CLUSTER_REF_READ_FASTA),
+        lambda w: expand_template_from_bins(w, BIN_CLUSTER_POL_READS_FASTA),
+        lambda w: expand_template_from_bins(w, DTR_ALIGN_COORD_PLOT),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+        lambda w: expand_template_from_bins(w, \
+                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
 
 rule all_combine_dedup_summarize:
     input:
@@ -259,3 +302,4 @@ rule all_linear_concatemer_reads:
     input:
         CONCATEMER_READ_COPY_REPEATS_CONTOURS,
         CONCATEMER_READ_FASTA,
+
