@@ -25,6 +25,8 @@ conda env create -f environment.yml
 ```
 That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake step (described below) is executed.
 
+For speed tips related to conda, see *mamba* section below.
+
 ## Pipeline configuration
 
 The pipeline determines the input files, output path, and the various software parameters from the file `config.yml`, which contains key:value pairs that control how the pipeline runs. 
@@ -137,7 +139,31 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ## FAQs and tips
 
-- TBD
+### *mamba*
+The conda package manager is a powerful tool for replicating bioinformatics,
+but it can be slow for large envirnonments. If you find installing any of the 
+environments is taking too long, try using
+[mamba](https://github.com/TheSnakePit/mamba).
+
+Mamba is a fast drop-in replacement for conda. It is still in development, but
+so far has proven to e useful. Simply install in your base envirnoment:
+
+```
+conda install mamba
+```
+
+and then replace `conda` with `mamba` in commands that install packages. EG:
+```
+mamba env create -f environment.yml
+```
+
+To get snakemake to use mamba, pass `--conda-frontend mamba` to your command:
+```
+snakemake --use-conda --conda-frontend mamba -p -r -j <nprocs>
+```
+
+### more to come
+ - TBD
 
 ## References and Supporting Information
 
