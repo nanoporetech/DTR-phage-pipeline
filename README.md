@@ -38,39 +38,41 @@ The pipeline determines the input files, output path, and the various software p
     - `max_threads`: Maximum number of threads to allocate for each rule
     - `MEDAKA:model`: Medaka model to use for polishing the draft genome (e.g. `r941_min_high_g303`). See Medaka [documentation](https://github.com/nanoporetech/medaka#models) for details on selecting the proper model for you basecalled reads.
     - `MEDAKA:threads`: Number of threads to use for each Medaka genome polishing. Should be << `max_threads` so that multiple genomes can be polished in parallel.
-    - `KAIJU:db`: Path to Kaiju database to use for taxonomic annotation. Folder should contain the *.fmi, names.dmp, and nodes.dmp files. These be downloaded from the [Kaiju web server](http://kaiju.binf.ku.dk/server). nr+euk is recommended.
+    - `KAIJU:db`: Path to Kaiju database to use for taxonomic annotation. Folder should contain the `*.fmi`, `names.dmp`, and `nodes.dmp` files. These be downloaded from the [Kaiju web server](http://kaiju.binf.ku.dk/server). nr+euk is recommended.
     - `KAIJU:switch`: Parameters to use for Kaiju annotation. These parameters should suffice in most cases.
     - `SKIP_BINS:<sample>:<stype>:<version>`: List of k-mer bins to skip for analysis. HDBSCAN assigns all unbinned reads to bin_id = -1, which should always be skipped. Occasionally downstream errors in the pipeline indicate that additional bad k-mer bins should also be skipped. 
 
 2. The second section of `config.yml` ('Editing optional') contains software parameters that can be adjusted, but should perform sufficiently well in most cases using the default values.
 
 ## Pipeline execution
-The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in multiple steps. 
+The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in one step. 
 
-### *Step 1*
+```
+snakemake --use-conda -p -j <nproc> -r 
+```
+Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. The output files for this workflow are placed in a path according to the variables set in the `config.yml` file. In this description, `<run_output_dir>` will refer to the path consisting of `<output_root>/<sample>/<stype>/<version>` as defined in the `config.yml` file.
+
+### all_kmer_count_and_bin
 The first step provides summary plots for the input reads, identifies reads containing DTR sequences, creates k-mer count vectors, embeds these vectors into 2-d via [UMAP](https://github.com/lmcinnes/umap), and calls bins in the embedding via [HDBSCAN](https://github.com/lmcinnes/HDBSCAN). 
-```
-snakemake --use-conda -p -j <nproc> -r all_kmer_count_and_bin
-```
-Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. The output files for this step are placed in a path according to the variables set in the `config.yml` file. In this description, `<run_output_dir>` will refer to the path consisting of `<output_root>/<sample>/<stype>/<version>` as defined in the `config.yml` file. The outputs from this step will fall into three directories:
-* `<run_output_dir>/reads_summary`
+
+The outputs from this step will fall into three directories:
+
+ * `<run_output_dir>/reads_summary`
     * `reads.summary.stats.png`: Read length and qscore distributions for all input reads
-* `<run_output_dir>/dtr_reads`
+ * `<run_output_dir>/dtr_reads`
     * `output.dtr.fasta`: FASTA file of all DTR-containing reads
     * `output.dtr.hist.png`: Read length distribution of all DTR-containing reads
     * `output.dtr.stats.tsv`: Statistics for each DTR-containing read
-* `<run_output_dir>/kmer_binning`
+ * `<run_output_dir>/kmer_binning`
     * `bin_membership.tsv`: bin assignments for each DTR-containing read
     * `kmer_comp.tsv`: 5-mer count vectors for each DTR-containing read
     * `kmer_comp.umap.tsv`: x- and y-coordinates for each read in the 2-d embedding
     * `kmer_comp.umap.*.png`: Variety of scatter plots of [UMAP](https://github.com/lmcinnes/umap) embedding of k-mer count vectors, annoted by features including GC-content, read length, and bin assigned by [HDBSCAN](https://github.com/lmcinnes/HDBSCAN)
     * `kmer_comp.umap.bins.tsv`: Mean x- and y-coordinates for each bin assigned by HDBSCAN (for finding bins in 2-d embedding)
     
-### *Step 2*
-The next step annotates reads using Kaiju and is not strictly required for producing polished genomes. However, it can be informative for verifying the integrity of the k-mer bins and for other downstream analyses.
-```
-snakemake --use-conda -p -j <nproc> -r all_kaiju
-```
+### all_kaiju
+The next (optional) step annotates reads using Kaiju and is not strictly required for producing polished genomes. However, it can be informative for verifying the integrity of the k-mer bins and for other downstream analyses.
+
 Some of the output files for this step include:
 * `<run_output_dir>/kaiju`
     * `results.html`: Krona dynamic plot of annotated taxonomic composition of DTR-containing reads
@@ -78,29 +80,23 @@ Some of the output files for this step include:
 * `<run_output_dir>/kmer_binning`
     * `kmer_comp.umap.nr_euk.[0-6].png`: Scatter plots of UMAP embedding of k-mer count vectors, annotated by various levels of taxonomic annotation
 
-### *Step 3*
+### all_populate_kmer_bins
 The next step simply populates subdirectories with the binned reads as assigned by HDBSCAN.
-```
-snakemake --use-conda -p -j <nproc> -r all_populate_kmer_bins
-```
+
 These subdirectories are located in the `kmer_binning` directory:
 * `<run_output_dir>/kmer_binning/bins/<bin_id>`
 * Each bin subdirectory contains a list of binned read names (`read_list.txt`) and an associated FASTA file of reads (`<bin_id>.reads.fa`)
 
-### *Step 4*
+### all_alignment_clusters
 Next, each k-mer bin is refined by all-vs-all aligning all reads within a bin. The resulting alignment scores are clustered hierarchically and refined alignment clusters are called from the clustering.
-```
-snakemake --use-conda -p -j <nproc> -r all_alignment_clusters
-```
+
 The bin refinement results for each k-mer bin are also placed in `kmer_binning` directory:
 * `<run_output_dir>/kmer_binning/refine_bins/align_clusters/<bin_id>`
 * Each bin refinement procedure generates an alignment (`<bin_id>.ava.paf`), clustering heatmap (`<bin_id>.clust.heatmap.png`), and information on alignment cluster assignments (`<bin_id>.clust.info.tsv`)
 
-### *Step 5*
+### all_polish_and_annotate
 Next, a single read is selected from each valid alignment cluster and is polished by the remaining reads in the alignment cluster. Polishing is first done using multiple rounds of [Racon](https://github.com/isovic/racon) (3x by default), then is finished using a single round of [Medaka](https://github.com/nanoporetech/medaka) polishing.
-```
-snakemake --use-conda -p -j <nproc> -r all_polish_and_annotate
-```
+
 This step produces polished output in the following directories:
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_reads/<clust_id>` simply contains the reads corresponding to each alignment cluster
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing/racon/<clust_id>` contains the Racon polishing output for each alignment cluster
@@ -110,11 +106,9 @@ This step produces polished output in the following directories:
     * `<clust_id>.ref_read.strands.*` files describe the strand abundance for reads in each alignment cluster. Clusters containing >80% reads from a single strand should be treated with suspicion.
     * `<clust_id>.ref_read.dtr.aligns.*` files describe the results of aligning the DTR sequence from each corresponding k-mer bin to the polished genome from each alignment cluster. If the DTR sequences all align to the same reference positions, the DTR is fixed. However, if they align all over the reference genome, this suggests that a headful DNA packaging mechanism was used. 
 
-### *Step 6*
+### all_combine_dedup_summarize
 Next, we finish up the genome discovery portion of the pipeline by running a series of aggregations and evaluations of the final polished genome sequences. 
-```
-snakemake --use-conda -p -j <nproc> -r all_combine_dedup_summarize
-```
+
 All output from this step is written to a single directory:
 * `<run_output_dir>/kmer_binning/refine_bins/align_cluster_polishing`
     * `polished.seqs.fasta`: The combined set of genomes from each alignment cluster
@@ -124,11 +118,9 @@ All output from this step is written to a single directory:
     * `polished.unique.cds.summary.all.png`: Summary plots of summary statistics for the coding sequences (CDS) annotated by Prodigal for each unique polished genome
     * `polished.unique.cds.summary.dtr_npol10.png`: Same as above but only including polished genomes with a confirmed DTR and at least 10 reads used for polishing
 
-### *Step 7*
+### all_linear_concatemer_reads
 Finally, we run one final step to query the sequencing dataset for linear concatemer reads that could represent interesting mobile elements in the environmental sample.
-```
-snakemake --use-conda -p -j <nproc> -r all_linear_concatemer_reads
-```
+
 All output from this step is written to a single directory:
 * `<run_output_dir>/concatemers`
     * `concats.fasta`: All identified concatemeric reads found in the input reads
@@ -144,6 +136,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ## FAQs and tips
+
 - TBD
 
 ## References and Supporting Information
