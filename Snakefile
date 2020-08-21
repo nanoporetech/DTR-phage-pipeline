@@ -245,12 +245,13 @@ output_files = [
                                         BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
     lambda w: expand_template_from_bin_clusters(w, \
                                        BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+
     # all_combine_dedup_summarize
     ALL_POL_CDS_PLOT_UNIQ_ALL,
     ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
     ALL_POL,
     ALL_POL_UNIQ,
-    ALL_POL_STATS
+    ALL_POL_STATS,
 
     # all_linear_concatemer_reads
     CONCATEMER_READ_COPY_REPEATS_CONTOURS,
@@ -258,14 +259,14 @@ output_files = [
 ]
 
 # all_kaiju              (optional for taxonomic annotation of UMAP plots)
-if config['KAIJU'].get(run, True):
-    if os.path.exists(KAIJU_DB_PATH):
+if config['KAIJU'].get('run', True):
+    if os.path.exists(KAIJU_DB_DIR):
         output_files.extend([
             KAIJU_RESULTS_KRONA_HTML,
             expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
         ])
     else:
-        logger.warning(f"No kaiju DB found in {KAIJU_DB_PATH}.\nSkipping Kaiju")
+        logger.warning(f"No kaiju DB found in {KAIJU_DB_DIR}.\nSkipping Kaiju")
 
 
 rule all:
