@@ -25,7 +25,18 @@ conda env create -f environment.yml
 ```
 That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake step (described below) is executed.
 
+### If conda is slow
+
 For speed tips related to conda, see *mamba* section below.
+
+### Testing
+
+To verify that everything is set up correctly, simply run the workflow without
+modifying config.yaml:
+
+```
+snakemake --use-conda -p -r -j 10
+```
 
 ## Pipeline configuration
 
