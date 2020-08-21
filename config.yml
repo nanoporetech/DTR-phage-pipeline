@@ -8,15 +8,16 @@ stype: '1D'
 version: 'v2'
 
 # Path of the read (*.fasta) & sequencing summary files you want to analyze
-input_fasta: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/data/25mspike_01pct.gt40kb.10k.fasta
-input_summary: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/data/25mspike_01pct.gt40kb.10k.summary.tsv
+input_fasta: test/reads.fasta
+input_summary: test/read_summary.txt
 
 # Path where you would like pipeline results to be written.
 # Run outputs will end up in in the directory: <output_root>/<sample>/<stype>/<version>/
-output_root: /media/sfodata/users/jbeaulaurier/projects/packages/DTR-phage-pipeline/analysis/
+output_root: test/test-output/
 
 max_threads: 32 # Maximum number of threads the pipeline will attempt to use
 pre_filter: DTR # Only process reads with DTR (None: all reads, Virsorter: virsorter)
+                #  virsorter is purely experimental at this point
 
 # Medaka model depends on whether MinION or PromethION used for sequencing and which Guppy version
 # was used for basecalling. Please see Medaka documentation for list of available models.
@@ -27,6 +28,8 @@ MEDAKA:
 KAIJU:
     db: /media/sfodata/databases/kaiju/nr_euk # dbs can be downloaded from http://kaiju.binf.ku.dk/server
     switch: '-a greedy -e 5' # max 5 substitutions and allows substitutions; slower but more sensitive than default params
+    run: True                # Set to False to skip kaiju
+                             # will also be skipped if DB is missing
 
 # Specify which k-mer bin to skip for each sample/run/version. HDBSCAN assigns all unbinned reads to bin_id = -1,
 # so this bin should always be skipped. But occasionally other 'bad' bins require skipping if they generate downstream 
