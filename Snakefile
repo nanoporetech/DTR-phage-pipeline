@@ -65,6 +65,7 @@ FILTERED_FASTA = VIRSORTER_FASTA if pre_filter == "VIRSORTER" \
 ###################################
 # KAIJU CLASSIFICATION            #
 ###################################
+KAIJU_DB_DIR              = config['KAIJU']['db']
 KAIJU_DIR                 = OUTPUT_ROOT /  SAMPLE / STYPE / VERSION / 'kaiju'
 KAIJU_RESULTS             = KAIJU_DIR / 'results.tsv'
 KAIJU_RESULTS_TAXA        = KAIJU_DIR / 'results.taxa.tsv'
@@ -209,28 +210,104 @@ include: 'rules/dtr_align.smk'
 include: 'rules/linear_concats.smk'
 
 #############################################
-# Required steps for assembly-free analysis #
+# the "all" rule
 #############################################
+# 
+# By default, all steps are run
+#
+output_files = [
 
-# 1. all_kmer_count_and_bin
-# 2. all_kaiju              (optional for taxonomic annotation of UMAP plots)
-# 3. all_populate_kmer_bins
-# 4. all_alignment_clusters
-# 5. all_polish_and_annotate
-# 6. all_combine_dedup_summarize
-# 7. all_linear_concatemer_reads
+    # all_kmer_count_and_bin: bin reads
+    SUMMARY_PLOT,
+    KMER_FREQS_UMAP_QSCORE,
+    KMER_FREQS_UMAP_GC,
+    KMER_FREQS_UMAP_READLENGTH,
+    KMER_FREQS_UMAP_BINS_PLOT,
+
+    # all_populate_kmer_bins
+    lambda w: expand_template_from_bins(w, BIN_READLIST),
+    lambda w: expand_template_from_bins(w, BIN_FASTA),
+
+    # all_alignment_clusters
+    KMER_BIN_STATS,
+    lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+
+    # all_polish_and_annotate
+    ALN_CLUST_READS_COMBO,
+    lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_REF_READ_FASTA),
+    lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POL_READS_FASTA),
+    lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_COORD_PLOT),
+    lambda w: expand_template_from_bin_clusters(w, \
+                                        BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
+    lambda w: expand_template_from_bin_clusters(w, \
+                                        BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
+    lambda w: expand_template_from_bin_clusters(w, \
+                                        BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
+    lambda w: expand_template_from_bin_clusters(w, \
+                                       BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+
+    # all_combine_dedup_summarize
+    ALL_POL_CDS_PLOT_UNIQ_ALL,
+    ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
+    ALL_POL,
+    ALL_POL_UNIQ,
+    ALL_POL_STATS,
+
+    # all_linear_concatemer_reads
+    CONCATEMER_READ_COPY_REPEATS_CONTOURS,
+    CONCATEMER_READ_FASTA,
+]
+
+# all_kaiju              (optional for taxonomic annotation of UMAP plots)
+if config['KAIJU'].get('run', True):
+    if os.path.exists(KAIJU_DB_DIR):
+        output_files.extend([
+            KAIJU_RESULTS_KRONA_HTML,
+            expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+        ])
+    else:
+        logger.warning(f"No kaiju DB found in {KAIJU_DB_DIR}.\nSkipping Kaiju")
+
 
 rule all:
+    input:
+        output_files
+
+## The orignal partial workflows
+
+rule all_kmer_count_and_bin:
     input:
         SUMMARY_PLOT,
         KMER_FREQS_UMAP_QSCORE,
         KMER_FREQS_UMAP_GC,
         KMER_FREQS_UMAP_READLENGTH,
         KMER_FREQS_UMAP_BINS_PLOT,
-        KAIJU_RESULTS_KRONA_HTML,
-        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
-        KMER_BIN_STATS,
-        lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+
+if os.path.exists(KAIJU_DB_DIR):
+    rule all_kaiju:
+        input:
+            KAIJU_RESULTS_KRONA_HTML,
+            expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+else:
+    logger.warning(f"No kaiju DB found in {KAIJU_DB_DIR}.\nSkipping Kaiju")
+    rule all_kaiju:
+        run:
+            print(f"Cannot run kaiju! DB not found at {KAIJU_DB_DIR}")
+
+rule all_populate_kmer_bins:
+    input:
+        bin_reads=lambda w: expand_template_from_bins(w, BIN_READLIST),
+        bin_fasta=lambda w: expand_template_from_bins(w, BIN_FASTA),
+
+rule all_alignment_clusters:
+    input:
+        stats=KMER_BIN_STATS,
+        heatmaps=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
+        align=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_INFO),
+
+rule all_polish_and_annotate:
+    input:
+        # all_polish_and_annotate
         ALN_CLUST_READS_COMBO,
         lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_REF_READ_FASTA),
         lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POL_READS_FASTA),
@@ -242,53 +319,7 @@ rule all:
         lambda w: expand_template_from_bin_clusters(w, \
                                             BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
         lambda w: expand_template_from_bin_clusters(w, \
-                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
-        ALL_POL_CDS_PLOT_UNIQ_ALL,
-        ALL_POL_CDS_PLOT_UNIQ_DTR_NPOL10,
-        ALL_POL,
-        ALL_POL_UNIQ,
-        ALL_POL_STATS
-
-## The orignal pieces
-
-rule all_kmer_count_and_bin:
-    input:
-        SUMMARY_PLOT,
-        KMER_FREQS_UMAP_QSCORE,
-        KMER_FREQS_UMAP_GC,
-        KMER_FREQS_UMAP_READLENGTH,
-        KMER_FREQS_UMAP_BINS_PLOT,
-
-rule all_kaiju:
-    input:
-        KAIJU_RESULTS_KRONA_HTML,
-        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
-
-rule all_populate_kmer_bins:
-    input:
-        bin_reads=lambda w: expand_template_from_bins(w, BIN_READLIST),
-        bin_fasta=lambda w: expand_teamplte_from_bins(w, BIN_FASTA),
-
-rule all_alignment_clusters:
-    input:
-        stats=KMER_BIN_STATS,
-        heatmaps=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_HEATMAP),
-        align=lambda w: expand_template_from_bins(w, ALN_CLUST_OUTPUT_INFO),
-
-rule all_polish_and_annotate:
-    input:
-        ALN_CLUST_READS_COMBO,
-        lambda w: expand_template_from_bins(w, BIN_CLUSTER_REF_READ_FASTA),
-        lambda w: expand_template_from_bins(w, BIN_CLUSTER_POL_READS_FASTA),
-        lambda w: expand_template_from_bins(w, DTR_ALIGN_COORD_PLOT),
-        lambda w: expand_template_from_bins(w, \
-                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
-        lambda w: expand_template_from_bins(w, \
-                                            BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
-        lambda w: expand_template_from_bins(w, \
-                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
-        lambda w: expand_template_from_bins(w, \
-                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+                                           BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
 
 rule all_combine_dedup_summarize:
     input:

@@ -3,4 +3,5 @@ analysis
 .snakemake
 rules/._*
 scripts/._*
-envs/._*
+test/test-output/
+test/env/
