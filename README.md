@@ -173,8 +173,41 @@ To get snakemake to use mamba, pass `--conda-frontend mamba` to your command:
 snakemake --use-conda --conda-frontend mamba -p -r -j <nprocs>
 ```
 
-### more to come
- - TBD
+### The "TBD" Error
+If you re-run the workflow from certain points, because there are multiple
+"checkpoints" where the number of output files is unknown until runtime, 
+snakemake will sometimes get confused about a rule's input. The exact error
+will depend upon where in the workflow it occurs.
+
+One know case gives this error:
+```
+[Errno 2] No such file or directory: 't'
+```
+
+but there may be others. They all share the odditiy that the rule's input is 
+marked as TBD in the snakemake output and log. For example:
+
+```
+rule aggregate_prodigal_statistics:
+    input: <TBD>
+    output:
+        test/test-output/25m/1D/v2/kmer_binning/refine_bins/align_cluster_polishing/polished.cds.summary.tsv
+    jobid: 21
+```
+
+The workaround is to ask snakemake explicitly to create the output file of the
+failed rule. This is done by jsut appending the full (with path) file name to
+the snakemake command. Simply copy the file path from the output reported after
+"TBD". For the example error above, you would run something
+like this:
+
+```
+snakemake --use-conda --conda-frontend mamba -p -r -j 10
+test/test-output/25m/1D/v2/kmer_binning/refine_bins/align_cluster_polishing/polished.cds.summary.tsv
+```
+
+The single step should run OK, then you can resume the rest of the workflow with the `all` rule.
+
 
 ## References and Supporting Information
 
