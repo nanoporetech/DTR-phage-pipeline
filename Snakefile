@@ -283,10 +283,16 @@ rule all_kmer_count_and_bin:
         KMER_FREQS_UMAP_READLENGTH,
         KMER_FREQS_UMAP_BINS_PLOT,
 
-rule all_kaiju:
-    input:
-        KAIJU_RESULTS_KRONA_HTML,
-        expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+if os.path.exists(KAIJU_DB_DIR):
+    rule all_kaiju:
+        input:
+            KAIJU_RESULTS_KRONA_HTML,
+            expand(str(KMER_FREQS_UMAP_TAX), database=DATABASE_NAME, rank=TAX_RANK),
+else:
+    logger.warning(f"No kaiju DB found in {KAIJU_DB_DIR}.\nSkipping Kaiju")
+    rule all_kaiju:
+        run:
+            print(f"Cannot run kaiju! DB not found at {KAIJU_DB_DIR}")
 
 rule all_populate_kmer_bins:
     input:
@@ -301,18 +307,19 @@ rule all_alignment_clusters:
 
 rule all_polish_and_annotate:
     input:
+        # all_polish_and_annotate
         ALN_CLUST_READS_COMBO,
-        lambda w: expand_template_from_bins(w, BIN_CLUSTER_REF_READ_FASTA),
-        lambda w: expand_template_from_bins(w, BIN_CLUSTER_POL_READS_FASTA),
-        lambda w: expand_template_from_bins(w, DTR_ALIGN_COORD_PLOT),
-        lambda w: expand_template_from_bins(w, \
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_REF_READ_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, BIN_CLUSTER_POL_READS_FASTA),
+        lambda w: expand_template_from_bin_clusters(w, DTR_ALIGN_COORD_PLOT),
+        lambda w: expand_template_from_bin_clusters(w, \
                                             BIN_CLUSTER_POLISHED_REF_PRODIGAL_TXT),
-        lambda w: expand_template_from_bins(w, \
+        lambda w: expand_template_from_bin_clusters(w, \
                                             BIN_CLUSTER_POLISHED_REF_PRODIGAL_STATS),
-        lambda w: expand_template_from_bins(w, \
+        lambda w: expand_template_from_bin_clusters(w, \
                                             BIN_CLUSTER_POLISHED_POL_VS_REF_STRANDS),
-        lambda w: expand_template_from_bins(w, \
-                                            BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
+        lambda w: expand_template_from_bin_clusters(w, \
+                                           BIN_CLUSTER_POLISHED_POL_VS_REF_STRAND_ANNOTS),
 
 rule all_combine_dedup_summarize:
     input:
