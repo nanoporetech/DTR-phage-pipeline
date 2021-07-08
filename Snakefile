@@ -102,7 +102,8 @@ BIN_DIR                     = BINS_ROOT / '{bin_id}'
 BIN_READLIST                = BIN_DIR / 'read_list.txt'
 BIN_FASTA                   = BIN_DIR / '{bin_id}.reads.fa'
 BIN_GENOME_SIZE             = BIN_DIR / 'genome_size.txt'
-SKIP_BINS                   = config['SKIP_BINS'][SAMPLE][STYPE][VERSION]
+SKIP_BINS                   = set(str(b) for b in \
+                                  config['SKIP_BINS'][SAMPLE][STYPE][VERSION])
 BINNED_ANALYSIS_ROOT        = KMER_BIN_ROOT / "refine_bins"
 
 #####################################

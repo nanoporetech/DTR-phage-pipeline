@@ -56,7 +56,9 @@ The pipeline determines the input files, output path, and the various software p
     - `SKIP_BINS:<sample>:<stype>:<version>`: List of k-mer bins to skip for analysis. HDBSCAN assigns all unbinned reads to bin_id = -1, which should always be skipped. Occasionally downstream errors in the pipeline indicate that additional bad k-mer bins should also be skipped. 
 
 2. The second section of `config.yml` ('Editing optional') contains software parameters that can be adjusted, but should perform sufficiently well in most cases using the default values.
-
+    - 'BIN_AVA_ALGN:CLUST:max_recursion': If you get an error in this step from
+      reaching Python's max recursion depth, you can try increasing the limit
+      here if you have the system resources available.
 ## Pipeline execution
 The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in one step. 
 
