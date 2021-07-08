@@ -19,6 +19,7 @@ def parse_args():
     parser.add_argument('-p', '--prefix', help='Output file prefix [output]', type=str, default='output')
     parser.add_argument('-s', '--min_score_frac', help='Minimum fraction of maximum score for a cluster [0.8]', type=float, default=0.8)
     parser.add_argument('-n', '--min_reads', help='Minimum reads to create cluster [5]', type=int, default=5)
+    parser.add_argument('-R', '--max_recursion', help='Override the max recursion depth in python', type=int, default=-1)
 
     # Parse arguments
     args = parser.parse_args()
@@ -207,7 +208,6 @@ def create_figure(clusters, idx2, axc, args):
     np.random.shuffle(vals)
     cmap_c = plt.cm.colors.ListedColormap(plt.cm.hsv(vals))
 
-    im_c     = axc.matshow(dc, aspect='auto', origin='lower', cmap=cmap_c)
     def find_mid_index(vec, value):
         idx_vec = np.where(vec==value)[0]
         return idx_vec[int(len(idx_vec)/2)]
@@ -220,6 +220,9 @@ def create_figure(clusters, idx2, axc, args):
     plt.savefig('{}.heatmap.png'.format(args.prefix), dpi=250)
 
 def main(args):
+    if args.max_recursion > 0:
+        sys.setrecursionlimit(args.max_recursion)
+
     cols = ['qname', 'qlen', 'qstart', 'qend', 'strand', 'tname', \
             'tlen', 'tstart', 'tend', 'matches', 'alnlen', 'mapqv', \
             'tp', 'cm', 's1', 'dv', 'rl']

@@ -77,6 +77,7 @@ BIN_AVA_ALIGN:
     CLUST:
         min_score_frac: 0.8
         min_reads: 5
+        max_recursion: -1 # set to non-zero value to override python's max recursion depth
 
 DTR_ALIGN:
     ovlp: 20   # Percent of read start/end to check for alignment
