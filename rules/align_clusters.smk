@@ -25,6 +25,7 @@ rule bin_ava_clustering:
         max_recurs = config['BIN_AVA_ALIGN']['CLUST']['max_recursion'],
     shell:
         'python {SCRIPT_DIR}/cluster_ava_alignments.py -p {params.prefix} '
+        ' -R {params.max_recurs} '
         ' -s {params.min_score_frac} -n {params.min_reads} {input}'
 
 rule combine_bin_cluster_read_info:
