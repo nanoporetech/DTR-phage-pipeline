@@ -68,13 +68,15 @@ rule combine_bin_cluster_strand_counts_into_table:
         counts=temp(ALL_POL_STRANDS),
         annots=temp(ALL_POL_STRAND_ANNOTS)
     run:
-        count_dfs = [pd.read_csv(fn, sep='\t') for fn in input.counts]
+        count_fns = [input.counts] if isinstance(input.counts, Path) else input.counts
+        count_dfs = [pd.read_csv(fn, sep='\t') for fn in count_fns]
         count_df  = pd.concat(count_dfs)
         count_df['bin']     = count_df['clust_id'].map(lambda x: int(x.split('_')[0]))
         count_df['cluster'] = count_df['clust_id'].map(lambda x: int(x.split('_')[1]))
         count_df            = count_df.sort_values(['bin','cluster']).drop(['bin','cluster'], axis=1).round({'frac_pos': 2, 'frac_neg': 2})
         count_df.to_csv(output.counts, sep='\t', index=False)
-        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in input.annots]
+        annot_fns = [input.annots] if isinstance(input.annots, Path) else input.annots
+        annot_dfs = [pd.read_csv(fn, sep='\t') for fn in annot_fns]
         annot_df  = pd.concat(annot_dfs)
         annot_df.to_csv(output.annots, sep='\t', index=False)
 
