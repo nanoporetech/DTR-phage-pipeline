@@ -21,7 +21,10 @@ TAX_RANK      = ["0","1","2","3","4","5","6"]
 ###################################
 # OUTPUT VARS                     #
 ###################################
-OUTPUT_ROOT  = Path(config['output_root'])
+OUTPUT_ROOT  = config['output_root']
+if OUTPUT_ROOT.endswith('/'):
+    OUTPUT_ROOT = OUTPUT_ROOT[:-1]
+OUTPUT_ROOT  = Path(OUTPUT_ROOT)
 VERSION      = config['version']
 RACON_ROUNDS = config['RACON']['repeat']
 
