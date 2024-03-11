@@ -6,7 +6,11 @@ import numpy as np
 from snakemake.logging import logger
 
 configfile: 'config.yml'
-SCRIPT_DIR = srcdir('scripts')
+# this SCRIPT_DIR definition uses something outside the official API
+# snakemake may change out from under us.
+# To reduce the chance of future problems, we should switch all the scripts
+# to snakemake scripts from shell scripts....
+SCRIPT_DIR = workflow.basedir + "/scripts"    
 
 ###################################
 # INPUT VARS                      #
