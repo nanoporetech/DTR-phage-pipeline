@@ -6,7 +6,11 @@ import numpy as np
 from snakemake.logging import logger
 
 configfile: 'config.yml'
-SCRIPT_DIR = srcdir('scripts')
+# this SCRIPT_DIR definition uses something outside the official API
+# snakemake may change out from under us.
+# To reduce the chance of future problems, we should switch all the scripts
+# to snakemake scripts from shell scripts....
+SCRIPT_DIR = workflow.basedir + "/scripts"    
 
 ###################################
 # INPUT VARS                      #
@@ -21,7 +25,10 @@ TAX_RANK      = ["0","1","2","3","4","5","6"]
 ###################################
 # OUTPUT VARS                     #
 ###################################
-OUTPUT_ROOT  = Path(config['output_root'])
+OUTPUT_ROOT  = config['output_root']
+if OUTPUT_ROOT.endswith('/'):
+    OUTPUT_ROOT = OUTPUT_ROOT[:-1]
+OUTPUT_ROOT  = Path(OUTPUT_ROOT)
 VERSION      = config['version']
 RACON_ROUNDS = config['RACON']['repeat']
 
