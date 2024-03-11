@@ -21,8 +21,22 @@ cd DTR-phage-pipeline
 ```
 Next, create a `conda` environment where you will run `Snakemake`:
 ```
-conda env create -f environment.yml
+conda env create -f environment.yml -n env_name
 ```
+You should replace `env_name` with a name of your choice. You can also create
+the environment in a specific path by replacing `-n env_name` with
+`-p path/to/env`.
+
+Finally, activate your conda environment with the name or path you specified
+above:
+```
+conda activate env_name
+```
+or
+```
+conda activate path/to/env
+```
+
 That's all. Ideally, `conda` shoud take care of all the remaining dependencies when each specific Snakemake step (described below) is executed.
 
 ### If conda is slow
@@ -35,7 +49,7 @@ To verify that everything is set up correctly, simply run the workflow without
 modifying config.yaml:
 
 ```
-snakemake --use-conda -p -r -j 10
+snakemake --use-conda -p -c 10
 ```
 
 ## Pipeline configuration
@@ -63,7 +77,7 @@ The pipeline determines the input files, output path, and the various software p
 The full pipeline, starting from raw reads and ending with nanopore-polished phage genomes, can be executed in one step. 
 
 ```
-snakemake --use-conda -p -j <nproc> -r 
+snakemake --use-conda -p -c <nproc>  
 ```
 Where `<nproc>` is the maximum number of cores for all tasks in the pipeline. The output files for this workflow are placed in a path according to the variables set in the `config.yml` file. In this description, `<run_output_dir>` will refer to the path consisting of `<output_root>/<sample>/<stype>/<version>` as defined in the `config.yml` file.
 
@@ -153,13 +167,17 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ## FAQs and tips
 
 ### *mamba*
+(NOTE: as of early 2024, conda has learned from mamba and is much faster. Mamba
+currently only provies a slight improvement. I'm leaving these instructions in
+case the balance shifts again.)
+
 The conda package manager is a powerful tool for replicating bioinformatics,
 but it can be slow for large envirnonments. If you find installing any of the 
 environments is taking too long, try using
 [mamba](https://github.com/TheSnakePit/mamba).
 
 Mamba is a fast drop-in replacement for conda. It is still in development, but
-so far has proven to e useful. Simply install in your base envirnoment:
+so far has proven to be useful. Simply install in your base envirnoment:
 
 ```
 conda install mamba
